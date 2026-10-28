@@ -6,6 +6,9 @@
 <div th:fragment="content">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="page-title mb-0">Quản lý Hóa đơn</h1>
+        <button type="button" class="btn btn-accent" data-bs-toggle="modal" data-bs-target="#modalTaoHoaDon">
+            <i class="bi bi-plus-circle me-1"></i>Tạo hóa đơn
+        </button>
     </div>
     <div class="card-box">
         <div class="card-box-hd">
@@ -59,6 +62,43 @@
                 </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modal Tạo Hóa Đơn -->
+    <div class="modal fade" id="modalTaoHoaDon" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/landlord/hoa-don/tao}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-receipt me-1" style="color:#6366f1;"></i>Tạo hóa đơn thanh toán</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-500">Hợp đồng / Phòng thuê <span class="text-danger">*</span></label>
+                            <select name="hopDongId" class="form-select" required>
+                                <option value="">-- Chọn hợp đồng / phòng --</option>
+                                <option th:each="hd : ${danhSachHopDong}"
+                                        th:value="${hd.id}"
+                                        th:text="'HĐ #' + ${hd.id} + ' - Phòng ' + ${hd.soPhong} + ' (' + ${hd.tenToaNha} + ')' + (${hd.daiDien != null} ? ' - ' + ${hd.daiDien.hoTen} : '')"></option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-500">Tháng lập hóa đơn <span class="text-danger">*</span></label>
+                            <input type="month" name="thangNam" class="form-control" th:value="${thangHienTai}" required>
+                            <div class="form-text text-muted" style="font-size:.78rem;">
+                                Lưu ý: Nếu là kỳ tiếp theo, phòng cần có chỉ số điện nước tháng trước đã chốt.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-accent"><i class="bi bi-check-lg me-1"></i>Tạo hóa đơn</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

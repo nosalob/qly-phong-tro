@@ -41,7 +41,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 // Static resources
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/uploads/**").permitAll()
+                .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                 // Login page & error pages
                 .requestMatchers("/login", "/error", "/error/**").permitAll()
                 // Landlord area
@@ -80,6 +80,12 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
+            if (authentication.getPrincipal() instanceof com.qlytro.security.CustomUserDetails userDetails) {
+                if (userDetails.isMustChangePassword()) {
+                    response.sendRedirect("/doi-mat-khau?required=true");
+                    return;
+                }
+            }
             boolean isLandlord = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_LANDLORD"));
             if (isLandlord) {

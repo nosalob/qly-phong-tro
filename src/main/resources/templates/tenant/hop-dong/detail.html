@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head><title>Hợp đồng của tôi</title></head>
+<body>
+<div th:fragment="content">
+    <h1 class="page-title mb-3">Hợp đồng thuê phòng của tôi</h1>
+
+    <!-- Thông báo nếu không có hợp đồng active -->
+    <div th:if="${infoMsg != null}" class="alert alert-info d-flex align-items-center gap-2" style="border-radius:10px;">
+        <i class="bi bi-info-circle-fill fs-5"></i>
+        <div th:text="${infoMsg}">Bạn hiện không có hợp đồng thuê phòng nào đang có hiệu lực.</div>
+    </div>
+
+    <div th:if="${hopDong != null}" class="row g-3">
+        <!-- Thông tin cơ bản hợp đồng -->
+        <div class="col-lg-6">
+            <div class="card-box h-100">
+                <div class="card-box-hd">
+                    <h5><i class="bi bi-file-earmark-text me-2" style="color:#6366f1"></i>Chi tiết hợp đồng</h5>
+                    <span class="badge"
+                          th:classappend="${hopDong.trangThai != null and hopDong.trangThai.name() == 'ACTIVE'} ? 'bg-success' : 'bg-secondary'"
+                          th:text="${hopDong.trangThaiLabel != null ? hopDong.trangThaiLabel : (hopDong.trangThai != null ? hopDong.trangThai.name() : 'ACTIVE')}">ACTIVE</span>
+                </div>
+                <div class="p-3">
+                    <table class="table table-borderless mb-0" style="font-size:.875rem;">
+                        <tr>
+                            <td class="text-muted" style="width:140px;">Phòng thuê:</td>
+                            <td><strong style="font-size:1.05rem;color:#6366f1" th:text="'Phòng ' + ${hopDong.soPhong != null ? hopDong.soPhong : (hopDong.phong != null ? hopDong.phong.soPhong : '')}"></strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Tòa nhà:</td>
+                            <td>
+                                <span th:text="${hopDong.tenToaNha != null ? hopDong.tenToaNha : (hopDong.phong != null ? hopDong.phong.toaNha.tenToaNha : '')}"></span>
+                                <span th:if="${hopDong.phong != null and hopDong.phong.toaNha != null and hopDong.phong.toaNha.diaChi != null}"
+                                      th:text="' (' + ${hopDong.phong.toaNha.diaChi} + ')'"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Giá thuê / tháng:</td>
+                            <td><strong class="text-primary fs-6" th:text="${#numbers.formatDecimal(hopDong.tienThue, 0, 'COMMA', 0, 'POINT')} + ' đ'"></strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Tiền đặt cọc:</td>
+                            <td><strong class="text-success fs-6" th:text="${#numbers.formatDecimal(hopDong.tienCoc, 0, 'COMMA', 0, 'POINT')} + ' đ'"></strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Ngày bắt đầu:</td>
+                            <td><span th:text="${#temporals.format(hopDong.ngayBatDau, 'dd/MM/yyyy')}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Ngày kết thúc:</td>
+                            <td><span th:text="${hopDong.ngayKetThuc != null ? #temporals.format(hopDong.ngayKetThuc, 'dd/MM/yyyy') : 'Không thời hạn'}"></span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Trạng thái cọc:</td>
+                            <td>
+                                <span class="badge bg-light text-dark border"
+                                      th:text="${hopDong.trangThaiCocLabel != null ? hopDong.trangThaiCocLabel : hopDong.trangThaiCoc}"></span>
+                            </td>
+                        </tr>
+                        <tr th:if="${hopDong.tienCocConLai != null}">
+                            <td class="text-muted">Cọc sau quyết toán:</td>
+                            <td>
+                                <strong th:classappend="${hopDong.tienCocConLai.compareTo(T(java.math.BigDecimal).ZERO) >= 0} ? 'text-success' : 'text-danger'"
+                                        th:text="${#numbers.formatDecimal(hopDong.tienCocConLai, 0, 'COMMA', 0, 'POINT')} + ' đ'"></strong>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Cảnh báo nếu công nợ vượt cọc -->
+                    <div th:if="${hopDong.tienCocConLai != null and hopDong.tienCocConLai.compareTo(T(java.math.BigDecimal).ZERO) < 0}"
+                         class="alert alert-danger mt-3 mb-0 p-3" style="font-size:.85rem;border-radius:10px;border:1.5px solid #ef4444;background:#fef2f2;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                            <strong class="text-danger">Tổng công nợ vượt quá tiền cọc!</strong>
+                        </div>
+                        <div>Số tiền còn thiếu nợ chủ trọ: <strong class="fs-6 text-danger" th:text="${#numbers.formatDecimal(hopDong.tienCocConLai.negate(), 0, 'COMMA', 0, 'POINT')} + ' đ'"></strong>.</div>
+                        <div class="mt-2 text-muted" style="font-size:.8rem;">
+                            Vui lòng kiểm tra các khoản <strong>Hóa đơn chưa thanh toán</strong> hoặc <strong>Phiếu bồi thường</strong> để chuyển khoản hoàn tất.
+                        </div>
+                        <div class="mt-2 d-flex gap-2">
+                            <a th:href="@{/tenant/hoa-don}" class="btn btn-sm btn-outline-danger" style="font-size:.78rem;padding:3px 10px;border-radius:6px;">
+                                <i class="bi bi-receipt me-1"></i>Hóa đơn của tôi
+                            </a>
+                            <a th:href="@{/tenant/boi-thuong}" class="btn btn-sm btn-outline-danger" style="font-size:.78rem;padding:3px 10px;border-radius:6px;">
+                                <i class="bi bi-shield-exclamation me-1"></i>Bồi thường thiệt hại
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh sách thành viên / người ở cùng -->
+        <div class="col-lg-6">
+            <div class="card-box h-100">
+                <div class="card-box-hd">
+                    <h5><i class="bi bi-people me-2" style="color:#6366f1"></i>Người đang ở trong phòng</h5>
+                    <small class="text-muted" th:if="${danhSachDangO != null}" th:text="${danhSachDangO.size()} + ' người'"></small>
+                </div>
+                <div class="p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size:.875rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Họ và tên</th>
+                                    <th>CCCD</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Vai trò</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${#lists.isEmpty(danhSachDangO)}">
+                                    <td colspan="4" class="text-center text-muted py-3">Chưa có thông tin thành viên</td>
+                                </tr>
+                                <tr th:each="k : ${danhSachDangO}">
+                                    <td>
+                                        <strong th:text="${k.hoTen != null ? k.hoTen : (k.khachThue != null ? k.khachThue.hoTen : '')}"></strong>
+                                    </td>
+                                    <td th:text="${k.cccd != null ? k.cccd : (k.khachThue != null ? k.khachThue.cccd : '')}"></td>
+                                    <td th:text="${k.sdt != null and !k.sdt.isBlank() ? k.sdt : (k.khachThue != null and k.khachThue.sdt != null ? k.khachThue.sdt : '—')}"></td>
+                                    <td>
+                                        <span th:if="${k.laDaiDien}" class="badge bg-primary"><i class="bi bi-star-fill me-1"></i>Đại diện</span>
+                                        <span th:unless="${k.laDaiDien}" class="badge bg-light text-dark">Ở cùng</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Danh sách người đã rời phòng -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="fw-bold text-muted mb-2" style="font-size:.82rem;">
+                            <i class="bi bi-clock-history me-1"></i>Lịch sử thành viên đã rời phòng (<span th:text="${danhSachDaRoiDi != null ? danhSachDaRoiDi.size() : 0}"></span>)
+                        </div>
+                        <div th:if="${danhSachDaRoiDi == null or danhSachDaRoiDi.isEmpty()}" class="p-2 text-center text-muted fst-italic" style="font-size:.82rem;">
+                            Chưa có thành viên nào rời phòng
+                        </div>
+                        <div class="table-responsive" th:if="${danhSachDaRoiDi != null and !danhSachDaRoiDi.isEmpty()}">
+                            <table class="table table-sm text-muted mb-0" style="font-size:.8rem;">
+                                <tbody>
+                                    <tr th:each="k : ${danhSachDaRoiDi}">
+                                        <td th:text="${k.hoTen != null ? k.hoTen : (k.khachThue != null ? k.khachThue.hoTen : '')}"></td>
+                                        <td th:text="${k.cccd != null ? k.cccd : (k.khachThue != null ? k.khachThue.cccd : '')}"></td>
+                                        <td class="text-end"><span class="badge bg-secondary">Đã rời phòng</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

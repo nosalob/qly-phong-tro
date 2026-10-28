@@ -17,6 +17,7 @@ public interface ChiSoDienNuocRepository extends JpaRepository<ChiSoDienNuoc, In
     List<ChiSoDienNuoc> findByTrangThai(TrangThaiChiSo trangThai);
 
     boolean existsByPhong_IdAndThangNam(Integer phongId, String thangNam);
+    boolean existsByPhong_Id(Integer phongId);
 
     /** Tim chi so moi nhat cua phong de lay chi so cu cho thang tiep theo. */
     Optional<ChiSoDienNuoc> findTopByPhong_IdOrderByThangNamDesc(Integer phongId);

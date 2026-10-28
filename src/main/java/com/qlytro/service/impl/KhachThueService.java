@@ -4,6 +4,7 @@ import com.qlytro.dto.request.KhachThueRequest;
 import com.qlytro.dto.response.KhachThueResponse;
 import com.qlytro.entity.KhachThue;
 import com.qlytro.entity.NguoiDung;
+import com.qlytro.entity.enums.VaiTroNguoiDung;
 import com.qlytro.exception.BusinessException;
 import com.qlytro.exception.ResourceNotFoundException;
 import com.qlytro.repository.KhachThueRepository;
@@ -19,11 +20,14 @@ public class KhachThueService implements BaseService<KhachThueResponse, Integer>
 
     private final KhachThueRepository khachThueRepository;
     private final NguoiDungRepository nguoiDungRepository;
+    private final com.qlytro.repository.HopDongKhachThueRepository hdktRepository;
 
     public KhachThueService(KhachThueRepository khachThueRepository,
-                             NguoiDungRepository nguoiDungRepository) {
+                             NguoiDungRepository nguoiDungRepository,
+                             com.qlytro.repository.HopDongKhachThueRepository hdktRepository) {
         this.khachThueRepository = khachThueRepository;
         this.nguoiDungRepository = nguoiDungRepository;
+        this.hdktRepository = hdktRepository;
     }
 
     @Override
@@ -62,6 +66,9 @@ public class KhachThueService implements BaseService<KhachThueResponse, Integer>
     public void deleteById(Integer id) {
         khachThueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Khách thuê", id));
+        if (hdktRepository.existsByKhachThue_Id(id)) {
+            throw new BusinessException("Khách thuê đã từng thuộc hợp đồng, không thể xóa.");
+        }
         khachThueRepository.deleteById(id);
     }
 
@@ -73,7 +80,17 @@ public class KhachThueService implements BaseService<KhachThueResponse, Integer>
         if (request.getNguoiDungId() != null) {
             NguoiDung nd = nguoiDungRepository.findById(request.getNguoiDungId())
                     .orElseThrow(() -> new ResourceNotFoundException("Người dùng", request.getNguoiDungId()));
+            if (!VaiTroNguoiDung.KHACH_THUE.equals(nd.getVaiTro())) {
+                throw new BusinessException("Tài khoản '" + nd.getUsername() + "' không có vai trò Người thuê.");
+            }
+            var existingKt = khachThueRepository.findByNguoiDung_Id(nd.getId());
+            if (existingKt.isPresent() && !existingKt.get().getId().equals(kt.getId())) {
+                throw new BusinessException("Tài khoản '" + nd.getUsername()
+                        + "' đã được liên kết với hồ sơ khách thuê khác (" + existingKt.get().getHoTen() + ").");
+            }
             kt.setNguoiDung(nd);
+        } else {
+            kt.setNguoiDung(null);
         }
     }
 

@@ -73,6 +73,11 @@
                                 </button>
                             </form>
                         </div>
+                        <div th:if="${suCo.trangThai.name() == 'HOAN_THANH' and suCo.nguyenNhan != null and suCo.nguyenNhan.name() == 'DO_NGUOI_O_LAM_HONG'}" class="d-flex gap-2">
+                            <a th:href="@{/landlord/boi-thuong/them(suCoId=${suCo.id})}" class="btn btn-sm btn-danger" style="border-radius:8px;">
+                                <i class="bi bi-shield-plus me-1"></i>Lập phiếu bồi thường cho sự cố này
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

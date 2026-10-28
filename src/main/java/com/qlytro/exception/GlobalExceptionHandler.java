@@ -38,6 +38,14 @@ public class GlobalExceptionHandler {
         return "error/404";
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public String handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex, Model model) {
+        log.error("Data integrity violation: ", ex);
+        model.addAttribute("errorTitle", "Ràng buộc dữ liệu");
+        model.addAttribute("errorMessage", "Thao tác không thể thực hiện do ràng buộc dữ liệu hoặc đang có dữ liệu liên quan tham chiếu.");
+        return "error/business";
+    }
+
     @ExceptionHandler(Exception.class)
     public String handleGeneral(Exception ex, Model model) {
         log.error("Unhandled exception", ex);

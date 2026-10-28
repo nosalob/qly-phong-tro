@@ -75,6 +75,24 @@
                        class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:.82rem;">
                         <i class="bi bi-file-earmark-text me-1"></i>Hợp đồng
                     </a>
+
+                    <form th:if="${phong.trangThai != null and phong.trangThai.name() == 'TRONG'}"
+                          th:action="@{/landlord/phong/{id}/ngung-su-dung(id=${phong.id})}" method="post" class="d-inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-sm btn-outline-warning" style="border-radius:8px;font-size:.82rem;"
+                                onclick="return confirm('Bạn có chắc muốn chuyển phòng này sang Ngừng sử dụng?')">
+                            <i class="bi bi-pause-circle me-1"></i>Ngừng sử dụng
+                        </button>
+                    </form>
+
+                    <form th:if="${phong.trangThai != null and phong.trangThai.name() == 'NGUNG_SU_DUNG'}"
+                          th:action="@{/landlord/phong/{id}/mo-lai(id=${phong.id})}" method="post" class="d-inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-sm btn-outline-success" style="border-radius:8px;font-size:.82rem;"
+                                onclick="return confirm('Mở lại phòng này để tiếp tục cho thuê (về trạng thái Trống)?')">
+                            <i class="bi bi-play-circle me-1"></i>Mở lại phòng
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

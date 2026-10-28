@@ -38,6 +38,7 @@ public class KhachThueController {
     public String themForm(Model model) {
         model.addAttribute("khachRequest", new KhachThueRequest());
         model.addAttribute("taoTaiKhoan", false);
+        model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
         model.addAttribute("pageTitle", "Thêm Khách thuê");
 
         // SỬA 2: Trả về layout/base cho form thêm
@@ -55,6 +56,7 @@ public class KhachThueController {
                        RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("taoTaiKhoan", taoTaiKhoan);
+            model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
             model.addAttribute("pageTitle", "Thêm Khách thuê");
 
             // SỬA 3: Khi lỗi validate thì trả lại form trong base
@@ -62,21 +64,30 @@ public class KhachThueController {
             return "layout/base";
         }
 
-        // Neu chon tao kem tai khoan
-        if (taoTaiKhoan && username != null && !username.isBlank()) {
-            NguoiDungRequest ndReq = new NguoiDungRequest();
-            ndReq.setUsername(username);
-            ndReq.setPassword(password);
-            ndReq.setHoTen(request.getHoTen());
-            ndReq.setSdt(request.getSdt());
-            ndReq.setVaiTro(0); // KHACH_THUE
-            var nd = nguoiDungService.create(ndReq);
-            request.setNguoiDungId(nd.getId());
-        }
+        try {
+            // Neu chon tao kem tai khoan
+            if (taoTaiKhoan && username != null && !username.isBlank()) {
+                NguoiDungRequest ndReq = new NguoiDungRequest();
+                ndReq.setUsername(username);
+                ndReq.setPassword(password);
+                ndReq.setHoTen(request.getHoTen());
+                ndReq.setSdt(request.getSdt());
+                ndReq.setVaiTro(0); // KHACH_THUE
+                var nd = nguoiDungService.create(ndReq);
+                request.setNguoiDungId(nd.getId());
+            }
 
-        khachThueService.create(request);
-        redirectAttributes.addFlashAttribute("successMsg", "Thêm khách thuê thành công!");
-        return "redirect:/landlord/khach-thue";
+            khachThueService.create(request);
+            redirectAttributes.addFlashAttribute("successMsg", "Thêm khách thuê thành công!");
+            return "redirect:/landlord/khach-thue";
+        } catch (com.qlytro.exception.BusinessException ex) {
+            model.addAttribute("errorMsg", ex.getMessage());
+            model.addAttribute("taoTaiKhoan", taoTaiKhoan);
+            model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
+            model.addAttribute("pageTitle", "Thêm Khách thuê");
+            model.addAttribute("pageContent", "landlord/khach-thue/form");
+            return "layout/base";
+        }
     }
 
     @GetMapping("/sua/{id}")
@@ -91,6 +102,7 @@ public class KhachThueController {
         model.addAttribute("khachRequest", req);
         model.addAttribute("id", id);
         model.addAttribute("khach", kt);
+        model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
         model.addAttribute("pageTitle", "Sửa thông tin Khách thuê");
 
         // SỬA 4: Trả về layout/base cho form sửa
@@ -105,15 +117,25 @@ public class KhachThueController {
                       RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             model.addAttribute("id", id);
+            model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
             model.addAttribute("pageTitle", "Sửa Khách thuê");
 
             // SỬA 5: Khi sửa bị lỗi validate
             model.addAttribute("pageContent", "landlord/khach-thue/form");
             return "layout/base";
         }
-        khachThueService.update(id, request);
-        redirectAttributes.addFlashAttribute("successMsg", "Cập nhật thông tin khách thuê thành công!");
-        return "redirect:/landlord/khach-thue";
+        try {
+            khachThueService.update(id, request);
+            redirectAttributes.addFlashAttribute("successMsg", "Cập nhật thông tin khách thuê thành công!");
+            return "redirect:/landlord/khach-thue";
+        } catch (com.qlytro.exception.BusinessException ex) {
+            model.addAttribute("id", id);
+            model.addAttribute("errorMsg", ex.getMessage());
+            model.addAttribute("danhSachTaiKhoan", nguoiDungService.findAll());
+            model.addAttribute("pageTitle", "Sửa Khách thuê");
+            model.addAttribute("pageContent", "landlord/khach-thue/form");
+            return "layout/base";
+        }
     }
 
     @PostMapping("/xoa/{id}")

@@ -73,9 +73,18 @@ public class HopDongController {
             model.addAttribute("pageContent", "landlord/hop-dong/form");
             return "layout/base";
         }
-        var hd = hopDongService.create(request);
-        redirectAttributes.addFlashAttribute("successMsg", "Ký hợp đồng thành công!");
-        return "redirect:/landlord/hop-dong/" + hd.getId();
+        try {
+            var hd = hopDongService.create(request);
+            redirectAttributes.addFlashAttribute("successMsg", "Ký hợp đồng thành công!");
+            return "redirect:/landlord/hop-dong/" + hd.getId();
+        } catch (com.qlytro.exception.BusinessException ex) {
+            model.addAttribute("errorMsg", ex.getMessage());
+            model.addAttribute("danhSachPhong", phongService.findAll());
+            model.addAttribute("danhSachKhach", khachThueService.findAll());
+            model.addAttribute("pageTitle", "Ký Hợp đồng mới");
+            model.addAttribute("pageContent", "landlord/hop-dong/form");
+            return "layout/base";
+        }
     }
 
     @PostMapping("/{id}/ket-thuc")

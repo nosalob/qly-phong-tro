@@ -2,6 +2,7 @@ package com.qlytro.service.strategy;
 
 import com.qlytro.entity.HoaDonChiTiet;
 import com.qlytro.entity.enums.LoaiKhoanChiTiet;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -16,6 +17,7 @@ import java.util.List;
  *   + Neu ngayBatDau tu ngay 21 tro di: KHONG tinh tien phong thang nay (tra ve List.of()).
  * - Cac thang tiep theo: tinh du tien phong binh thuong.
  */
+@Order(1)
 @Component
 public class TinhTienPhongStrategy implements TinhTienStrategy {
 

@@ -152,4 +152,18 @@ public class PhongController {
         redirectAttributes.addFlashAttribute("successMsg", "Đã xóa thiết bị khỏi phòng!");
         return "redirect:/landlord/phong/chi-tiet/" + phongId;
     }
+
+    @PostMapping("/{id}/ngung-su-dung")
+    public String ngungSuDung(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        phongService.ngungSuDung(id);
+        redirectAttributes.addFlashAttribute("successMsg", "Đã chuyển phòng sang trạng thái Ngừng sử dụng.");
+        return "redirect:/landlord/phong/chi-tiet/" + id;
+    }
+
+    @PostMapping("/{id}/mo-lai")
+    public String moLai(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        phongService.moLai(id);
+        redirectAttributes.addFlashAttribute("successMsg", "Đã mở lại phòng thành công (trạng thái Trống).");
+        return "redirect:/landlord/phong/chi-tiet/" + id;
+    }
 }

@@ -12,4 +12,6 @@ public interface SuCoRepository extends JpaRepository<SuCo, Integer> {
     List<SuCo> findByTrangThai(TrangThaiSuCo trangThai);
     List<SuCo> findByNguoiBao_Id(Integer nguoiDungId);
     List<SuCo> findByPhong_IdAndTrangThai(Integer phongId, TrangThaiSuCo trangThai);
+    boolean existsByThietBi_Id(Integer thietBiId);
+    boolean existsByPhong_Id(Integer phongId);
 }

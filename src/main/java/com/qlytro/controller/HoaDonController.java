@@ -22,6 +22,10 @@ public class HoaDonController {
     @GetMapping("/landlord/hoa-don")
     public String landlordList(Model model) {
         model.addAttribute("danhSach", hoaDonService.findAll());
+        model.addAttribute("danhSachHopDong", hopDongService.findAll().stream()
+                .filter(hd -> hd.getTrangThai() != null && "ACTIVE".equalsIgnoreCase(hd.getTrangThai().name()))
+                .toList());
+        model.addAttribute("thangHienTai", java.time.YearMonth.now().toString());
         model.addAttribute("pageTitle", "Quản lý Hóa đơn");
 
         // SỬA 1: Trả về layout/base
@@ -60,7 +64,7 @@ public class HoaDonController {
 
             if (hopDongId == null) {
                 redirectAttributes.addFlashAttribute("errorMsg", "Không tìm thấy hợp đồng đang hiệu lực cho phòng này!");
-                return "redirect:/landlord/chi-so";
+                return "redirect:/landlord/hoa-don";
             }
 
             var hd = hoaDonService.taoHoaDon(hopDongId, thangNam);
@@ -69,7 +73,7 @@ public class HoaDonController {
             return "redirect:/landlord/hoa-don/" + hd.getId();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMsg", "Lỗi tạo hóa đơn: " + e.getMessage());
-            return "redirect:/landlord/chi-so";
+            return phongId != null && hopDongId == null ? "redirect:/landlord/chi-so" : "redirect:/landlord/hoa-don";
         }
     }
 
@@ -78,6 +82,15 @@ public class HoaDonController {
                                    RedirectAttributes redirectAttributes) {
         hoaDonService.xacNhanThanhToan(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã xác nhận thanh toán!");
+        return "redirect:/landlord/hoa-don/" + id;
+    }
+
+    @PostMapping("/landlord/hoa-don/{id}/tu-choi")
+    public String tuChoiThanhToan(@PathVariable Integer id,
+                                   @RequestParam(required = false) String lyDoTuChoi,
+                                   RedirectAttributes redirectAttributes) {
+        hoaDonService.tuChoiThanhToan(id, lyDoTuChoi);
+        redirectAttributes.addFlashAttribute("successMsg", "Đã từ chối thanh toán. Hóa đơn được chuyển về trạng thái Chưa thanh toán.");
         return "redirect:/landlord/hoa-don/" + id;
     }
 

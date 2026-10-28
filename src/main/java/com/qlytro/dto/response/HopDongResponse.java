@@ -26,4 +26,14 @@ public class HopDongResponse {
     private LocalDateTime ngayTao;
     private List<KhachThueResponse> danhSachKhach;
     private KhachThueResponse daiDien;
+
+    public List<KhachThueResponse> getDanhSachDangO() {
+        if (danhSachKhach == null) return java.util.List.of();
+        return danhSachKhach.stream().filter(k -> Boolean.TRUE.equals(k.getDangO())).toList();
+    }
+
+    public List<KhachThueResponse> getDanhSachDaRoiDi() {
+        if (danhSachKhach == null) return java.util.List.of();
+        return danhSachKhach.stream().filter(k -> !Boolean.TRUE.equals(k.getDangO())).toList();
+    }
 }

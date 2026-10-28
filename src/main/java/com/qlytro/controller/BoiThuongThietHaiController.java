@@ -75,6 +75,7 @@ public class BoiThuongThietHaiController {
         model.addAttribute("danhSachHopDong", hopDongService.findAll().stream()
                 .filter(hd -> "ACTIVE".equalsIgnoreCase(hd.getTrangThai().name()))
                 .toList());
+        model.addAttribute("danhSachSuCo", suCoService.findAll());
         model.addAttribute("nguonPhatHienList", NguonPhatHienBoiThuong.values());
         model.addAttribute("pageTitle", "Tạo yêu cầu Bồi thường");
         model.addAttribute("pageContent", "landlord/boi-thuong/form");
@@ -89,15 +90,28 @@ public class BoiThuongThietHaiController {
             model.addAttribute("danhSachHopDong", hopDongService.findAll().stream()
                     .filter(hd -> "ACTIVE".equalsIgnoreCase(hd.getTrangThai().name()))
                     .toList());
+            model.addAttribute("danhSachSuCo", suCoService.findAll());
             model.addAttribute("nguonPhatHienList", NguonPhatHienBoiThuong.values());
             model.addAttribute("pageTitle", "Tạo yêu cầu Bồi thường");
             model.addAttribute("pageContent", "landlord/boi-thuong/form");
             return "layout/base";
         }
 
-        var bt = boiThuongService.create(request);
-        redirectAttributes.addFlashAttribute("successMsg", "Ghi nhận yêu cầu bồi thường thành công!");
-        return "redirect:/landlord/boi-thuong/" + bt.getId();
+        try {
+            var bt = boiThuongService.create(request);
+            redirectAttributes.addFlashAttribute("successMsg", "Ghi nhận yêu cầu bồi thường thành công!");
+            return "redirect:/landlord/boi-thuong/" + bt.getId();
+        } catch (com.qlytro.exception.BusinessException ex) {
+            model.addAttribute("errorMsg", ex.getMessage());
+            model.addAttribute("danhSachHopDong", hopDongService.findAll().stream()
+                    .filter(hd -> "ACTIVE".equalsIgnoreCase(hd.getTrangThai().name()))
+                    .toList());
+            model.addAttribute("danhSachSuCo", suCoService.findAll());
+            model.addAttribute("nguonPhatHienList", NguonPhatHienBoiThuong.values());
+            model.addAttribute("pageTitle", "Tạo yêu cầu Bồi thường");
+            model.addAttribute("pageContent", "landlord/boi-thuong/form");
+            return "layout/base";
+        }
     }
 
     @PostMapping("/{id}/xac-nhan")

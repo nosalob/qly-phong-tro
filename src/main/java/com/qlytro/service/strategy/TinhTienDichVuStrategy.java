@@ -3,6 +3,7 @@ package com.qlytro.service.strategy;
 import com.qlytro.entity.HoaDonChiTiet;
 import com.qlytro.entity.PhiDichVu;
 import com.qlytro.entity.enums.LoaiKhoanChiTiet;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * Tao 1 dong chi tiet cho MOI loai phi dang_ap_dung=true.
  * (VD: phi rac, phi internet, phi gui xe — moi cai 1 dong rieng).
  */
+@Order(4)
 @Component
 public class TinhTienDichVuStrategy implements TinhTienStrategy {
 

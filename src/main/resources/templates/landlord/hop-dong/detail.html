@@ -134,8 +134,15 @@
                     </div>
                 </div>
 
+                <!-- Danh sách người đang ở -->
+                <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center px-3" style="font-size:.82rem;">
+                    <span class="fw-bold text-primary"><i class="bi bi-person-check me-1"></i>Thành viên đang ở (<span th:text="${hopDong.danhSachDangO.size()}"></span>)</span>
+                </div>
                 <ul class="list-group list-group-flush">
-                    <li th:each="k : ${hopDong.danhSachKhach}" class="list-group-item p-3" style="font-size:.875rem;">
+                    <li th:if="${#lists.isEmpty(hopDong.danhSachDangO)}" class="list-group-item p-3 text-center text-muted">
+                        Chưa có người ở
+                    </li>
+                    <li th:each="k : ${hopDong.danhSachDangO}" class="list-group-item p-3" style="font-size:.875rem;">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <div class="fw-600" th:text="${k.hoTen}"></div>
@@ -143,16 +150,16 @@
                                 <div th:if="${k.sdt != null and !k.sdt.isBlank()}" class="text-muted" style="font-size:.76rem">SĐT: <span th:text="${k.sdt}"></span></div>
                             </div>
                             <div class="text-end">
-                                <span th:if="${k.laDaiDien}" class="badge mb-1 d-inline-block" style="background:#e0e7ff;color:#4338ca;">Đại diện</span>
+                                <span th:if="${k.laDaiDien}" class="badge mb-1 d-inline-block" style="background:#e0e7ff;color:#4338ca;"><i class="bi bi-star-fill me-1"></i>Đại diện</span>
+                                <span th:unless="${k.laDaiDien}" class="badge mb-1 d-inline-block bg-light text-dark">Ở cùng</span>
                                 <div>
-                                    <span th:if="${k.dangO}" class="badge bg-active">Đang ở</span>
-                                    <span th:if="${!k.dangO}" class="badge bg-ngung">Đã rời đi</span>
+                                    <span class="badge bg-active">Đang ở</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Action buttons for roommates -->
-                        <div th:if="${hopDong.trangThai != null and hopDong.trangThai.name() == 'ACTIVE' and k.dangO}" class="d-flex gap-2 pt-2 border-top">
+                        <div th:if="${hopDong.trangThai != null and hopDong.trangThai.name() == 'ACTIVE'}" class="d-flex gap-2 pt-2 border-top">
                             <!-- Đổi người đại diện -->
                             <form th:if="${!k.laDaiDien}" th:action="@{/landlord/hop-dong/{id}/doi-dai-dien(id=${hopDong.id})}" method="post"
                                   onsubmit="return confirm('Chuyển người này thành Đại diện hợp đồng?')">
@@ -175,7 +182,27 @@
                         </div>
                     </li>
                 </ul>
-                <div th:if="${hopDong.danhSachKhach == null or hopDong.danhSachKhach.isEmpty()}" class="p-4 text-center text-muted">Chưa có người ở</div>
+
+                <!-- Danh sách thành viên đã rời phòng -->
+                <div class="p-2 bg-light border-top border-bottom d-flex justify-content-between align-items-center px-3" style="font-size:.82rem;">
+                    <span class="fw-bold text-muted"><i class="bi bi-clock-history me-1"></i>Lịch sử thành viên đã rời phòng (<span th:text="${hopDong.danhSachDaRoiDi.size()}"></span>)</span>
+                </div>
+                <div th:if="${#lists.isEmpty(hopDong.danhSachDaRoiDi)}" class="p-3 text-center text-muted fst-italic" style="font-size:.82rem;">
+                    Chưa có thành viên nào rời phòng
+                </div>
+                <ul th:if="${!#lists.isEmpty(hopDong.danhSachDaRoiDi)}" class="list-group list-group-flush">
+                    <li th:each="k : ${hopDong.danhSachDaRoiDi}" class="list-group-item p-3 text-muted" style="font-size:.85rem;background:#fafafa;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <strong th:text="${k.hoTen}"></strong>
+                                <div style="font-size:.76rem">CCCD: <span th:text="${k.cccd}"></span></div>
+                            </div>
+                            <div>
+                                <span class="badge bg-secondary">Đã rời phòng</span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>

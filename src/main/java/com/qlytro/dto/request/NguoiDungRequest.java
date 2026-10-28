@@ -19,14 +19,14 @@ public class NguoiDungRequest {
     @Size(max = 100)
     private String hoTen;
 
-    @Size(max = 15)
+    @Size(max = 15, message = "Số điện thoại tối đa 15 ký tự")
     private String sdt;
 
-    @Email(message = "Email không hợp lệ")
-    @Size(max = 100)
+    @Email(message = "Email không đúng định dạng", regexp = "(^$|^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$)")
+    @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 
     /** 1 = CHU_TRO, 0 = KHACH_THUE */
     @NotNull(message = "Vai trò không được để trống")
-    private Integer vaiTro;
+    private Integer vaiTro = 0;
 }

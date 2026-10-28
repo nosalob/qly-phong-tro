@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface PhongThietBiRepository extends JpaRepository<PhongThietBi, Integer> {
     List<PhongThietBi> findByPhong_Id(Integer phongId);
     boolean existsByPhong_IdAndThietBi_Id(Integer phongId, Integer thietBiId);
+    boolean existsByThietBi_Id(Integer thietBiId);
+    long countByThietBi_Id(Integer thietBiId);
     Optional<PhongThietBi> findByPhong_IdAndThietBi_Id(Integer phongId, Integer thietBiId);
     void deleteByPhong_IdAndThietBi_Id(Integer phongId, Integer thietBiId);
 }

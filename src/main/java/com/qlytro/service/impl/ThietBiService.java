@@ -16,11 +16,14 @@ public class ThietBiService implements BaseService<ThietBi, Integer> {
 
     private final ThietBiRepository thietBiRepository;
     private final PhongThietBiRepository phongThietBiRepository;
+    private final com.qlytro.repository.SuCoRepository suCoRepository;
 
     public ThietBiService(ThietBiRepository thietBiRepository,
-                          PhongThietBiRepository phongThietBiRepository) {
+                          PhongThietBiRepository phongThietBiRepository,
+                          com.qlytro.repository.SuCoRepository suCoRepository) {
         this.thietBiRepository = thietBiRepository;
         this.phongThietBiRepository = phongThietBiRepository;
+        this.suCoRepository = suCoRepository;
     }
 
     @Override
@@ -54,8 +57,12 @@ public class ThietBiService implements BaseService<ThietBi, Integer> {
     @Override
     public void deleteById(Integer id) {
         ThietBi tb = findById(id);
-        if (phongThietBiRepository.findByPhong_Id(id).size() > 0) {
-            // Kiem tra thiet bi co dang duoc dung trong phong nao khong
+        long countPhong = phongThietBiRepository.countByThietBi_Id(id);
+        if (countPhong > 0) {
+            throw new BusinessException("Thiết bị đang được gắn vào " + countPhong + " phòng, hãy gỡ trước khi xóa.");
+        }
+        if (suCoRepository.existsByThietBi_Id(id)) {
+            throw new BusinessException("Thiết bị đang có trong hồ sơ sự cố, không thể xóa.");
         }
         thietBiRepository.delete(tb);
     }

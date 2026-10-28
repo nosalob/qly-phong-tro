@@ -2,6 +2,7 @@ package com.qlytro.service.strategy;
 
 import com.qlytro.entity.HoaDonChiTiet;
 import com.qlytro.entity.enums.LoaiKhoanChiTiet;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.List;
  * Cong thuc: (chi_so_nuoc_moi - chi_so_nuoc_cu) * don_gia_nuoc
  * Gia tri don_gia duoc COPY vao hoa_don_chi_tiet tai thoi diem tinh (khong tham chieu ngoc).
  */
+@Order(3)
 @Component
 public class TinhTienNuocStrategy implements TinhTienStrategy {
 

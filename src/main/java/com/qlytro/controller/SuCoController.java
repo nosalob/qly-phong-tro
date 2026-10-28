@@ -3,7 +3,6 @@ package com.qlytro.controller;
 import com.qlytro.dto.request.SuCoRequest;
 import com.qlytro.entity.ThietBi;
 import com.qlytro.entity.enums.NguyenNhanSuCo;
-import com.qlytro.entity.enums.TrangThaiSuCo;
 import com.qlytro.security.CustomUserDetails;
 import com.qlytro.service.impl.PhongService;
 import com.qlytro.service.impl.SuCoService;

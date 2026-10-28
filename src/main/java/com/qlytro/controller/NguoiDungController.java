@@ -20,6 +20,11 @@ public class NguoiDungController {
         this.nguoiDungService = nguoiDungService;
     }
 
+    @InitBinder
+    public void initBinder(org.springframework.web.bind.WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, new org.springframework.beans.propertyeditors.StringTrimmerEditor(true));
+    }
+
     @GetMapping
     public String list(Model model) {
         model.addAttribute("danhSach", nguoiDungService.findAll());
@@ -47,9 +52,17 @@ public class NguoiDungController {
             model.addAttribute("pageContent", "landlord/nguoi-dung/form");
             return "layout/base";
         }
-        nguoiDungService.create(request);
-        redirectAttributes.addFlashAttribute("successMsg", "Tạo tài khoản thành công!");
-        return "redirect:/landlord/nguoi-dung";
+        try {
+            nguoiDungService.create(request);
+            redirectAttributes.addFlashAttribute("successMsg", "Tạo tài khoản thành công!");
+            return "redirect:/landlord/nguoi-dung";
+        } catch (com.qlytro.exception.BusinessException ex) {
+            model.addAttribute("errorMsg", ex.getMessage());
+            model.addAttribute("vaiTroList", VaiTroNguoiDung.values());
+            model.addAttribute("pageTitle", "Tạo Tài khoản");
+            model.addAttribute("pageContent", "landlord/nguoi-dung/form");
+            return "layout/base";
+        }
     }
 
     @PostMapping("/{id}/khoa")
@@ -63,6 +76,14 @@ public class NguoiDungController {
     public String moKhoa(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
         nguoiDungService.moKhoa(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã mở khóa tài khoản.");
+        return "redirect:/landlord/nguoi-dung";
+    }
+
+    @PostMapping("/{id}/reset-mat-khau")
+    public String resetMatKhau(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+        nguoiDungService.resetMatKhau(id);
+        redirectAttributes.addFlashAttribute("successMsg",
+                "Đã reset mật khẩu tài khoản về mặc định (123456). Tài khoản sẽ bắt buộc phải đổi mật khẩu khi đăng nhập!");
         return "redirect:/landlord/nguoi-dung";
     }
 }

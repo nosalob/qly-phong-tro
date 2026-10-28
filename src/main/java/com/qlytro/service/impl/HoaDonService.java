@@ -10,14 +10,12 @@ import com.qlytro.exception.ResourceNotFoundException;
 import com.qlytro.repository.*;
 import com.qlytro.service.base.BaseService;
 import com.qlytro.service.strategy.TinhTienContext;
-import com.qlytro.service.strategy.TinhTienDichVuStrategy;
-import com.qlytro.service.strategy.TinhTienDienStrategy;
-import com.qlytro.service.strategy.TinhTienNuocStrategy;
-import com.qlytro.service.strategy.TinhTienPhongStrategy;
+import com.qlytro.service.strategy.TinhTienStrategy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +32,8 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
     private final PhiDichVuRepository phiDichVuRepository;
     private final KhachThueRepository khachThueRepository;
 
-    // Strategy Pattern: cac chien luoc tinh tien
-    private final TinhTienPhongStrategy tinhTienPhong;
-    private final TinhTienDienStrategy tinhTienDien;
-    private final TinhTienNuocStrategy tinhTienNuoc;
-    private final TinhTienDichVuStrategy tinhTienDichVu;
+    // Strategy Pattern: danh sach tat ca cac chien luoc tinh tien duoc Spring inject tu dong
+    private final List<TinhTienStrategy> strategies;
 
     public HoaDonService(HoaDonRepository hoaDonRepository,
                          HoaDonChiTietRepository chiTietRepository,
@@ -48,10 +43,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                          BangGiaDienNuocRepository bangGiaRepository,
                          PhiDichVuRepository phiDichVuRepository,
                          KhachThueRepository khachThueRepository,
-                         TinhTienPhongStrategy tinhTienPhong,
-                         TinhTienDienStrategy tinhTienDien,
-                         TinhTienNuocStrategy tinhTienNuoc,
-                         TinhTienDichVuStrategy tinhTienDichVu) {
+                         List<TinhTienStrategy> strategies) {
         this.hoaDonRepository = hoaDonRepository;
         this.chiTietRepository = chiTietRepository;
         this.hopDongRepository = hopDongRepository;
@@ -60,10 +52,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         this.bangGiaRepository = bangGiaRepository;
         this.phiDichVuRepository = phiDichVuRepository;
         this.khachThueRepository = khachThueRepository;
-        this.tinhTienPhong = tinhTienPhong;
-        this.tinhTienDien = tinhTienDien;
-        this.tinhTienNuoc = tinhTienNuoc;
-        this.tinhTienDichVu = tinhTienDichVu;
+        this.strategies = strategies;
     }
 
     @Override
@@ -107,15 +96,37 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                 .toList();
     }
 
-    /** Khach thue nop tien (bao da chuyen khoan): POST form don gian. */
-    public HoaDonResponse khachNopTienForm(Integer id) {
+    @Transactional(readOnly = true)
+    public HoaDonResponse findByIdOfNguoiDung(Integer id, Integer nguoiDungId) {
+        return toResponse(getHoaDonOfNguoiDung(id, nguoiDungId));
+    }
+
+    private HoaDon getHoaDonOfNguoiDung(Integer id, Integer nguoiDungId) {
         HoaDon hd = hoaDonRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn", id));
+        if (nguoiDungId != null) {
+            KhachThue khachThue = khachThueRepository
+                    .findByNguoiDung_Id(nguoiDungId)
+                    .orElse(null);
+            if (khachThue == null || !hdktRepository.existsByHopDong_IdAndKhachThue_Id(hd.getHopDong().getId(), khachThue.getId())) {
+                throw new ResourceNotFoundException("Hóa đơn", id);
+            }
+        }
+        return hd;
+    }
+
+    /** Khach thue nop tien (bao da chuyen khoan): POST form don gian. */
+    public HoaDonResponse khachNopTienForm(Integer id, Integer nguoiDungId) {
+        HoaDon hd = getHoaDonOfNguoiDung(id, nguoiDungId);
         if (!TrangThaiHoaDon.CHUA_THANH_TOAN.equals(hd.getTrangThai())) {
             throw new BusinessException("Hóa đơn này không ở trạng thái Chưa thanh toán.");
         }
         hd.setTrangThai(TrangThaiHoaDon.CHO_DUYET);
         return toResponse(hoaDonRepository.save(hd));
+    }
+
+    public HoaDonResponse khachNopTienForm(Integer id) {
+        return khachNopTienForm(id, null);
     }
 
     /**
@@ -139,19 +150,34 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
             throw new BusinessException("Hóa đơn tháng " + thangNam + " đã tồn tại.");
         }
 
-        // Tinh thang truoc: hoa don thang N lay chi so dien nuoc thang N-1 (dong tre 1 ky)
-        String thangTruoc = java.time.YearMonth.parse(thangNam).minusMonths(1).toString();
+        YearMonth ymThangHoaDon = YearMonth.parse(thangNam);
 
-        // Lay chi so dien nuoc thang truoc (neu co)
-        ChiSoDienNuoc chiSo = chiSoRepository
-                .findByPhong_IdAndThangNam(hopDong.getPhong().getId(), thangTruoc)
-                .orElse(null);
+        if (hopDong.getNgayBatDau() != null && ymThangHoaDon.isBefore(YearMonth.from(hopDong.getNgayBatDau()))) {
+            throw new BusinessException("Tháng lập hóa đơn (" + thangNam + ") không được trước ngày bắt đầu hợp đồng ("
+                    + hopDong.getNgayBatDau() + ").");
+        }
+        if (hopDong.getNgayKetThuc() != null && ymThangHoaDon.isAfter(YearMonth.from(hopDong.getNgayKetThuc()))) {
+            throw new BusinessException("Hợp đồng chỉ có thời hạn đến "
+                    + hopDong.getNgayKetThuc() + ". Không thể tạo hóa đơn cho tháng " + thangNam + ".");
+        }
 
-        // Neu da co chi so dien nuoc thang truoc ma chua chot -> bao loi yeu cau chot
-        if (chiSo != null && !TrangThaiChiSo.DA_CHOT.equals(chiSo.getTrangThai())) {
-            throw new BusinessException(
-                    "Chỉ số điện nước tháng " + thangTruoc + " chưa được chốt. "
-                    + "Vui lòng chốt chỉ số trước khi tạo hóa đơn.");
+        YearMonth ymThangBatDau = YearMonth.from(hopDong.getNgayBatDau());
+
+        // Neu thang hoa don la thang bat dau hop dong -> chi thu tien phong + phi dich vu, chua co dien nuoc ky truoc
+        boolean laThangDau = ymThangHoaDon.equals(ymThangBatDau);
+        String thangTruoc = ymThangHoaDon.minusMonths(1).toString();
+        ChiSoDienNuoc chiSo = null;
+
+        if (!laThangDau) {
+            // Cac thang tiep theo: bat buoc phai co chi so dien nuoc thang truoc da chot
+            chiSo = chiSoRepository
+                    .findByPhong_IdAndThangNam(hopDong.getPhong().getId(), thangTruoc)
+                    .orElse(null);
+
+            if (chiSo == null || !TrangThaiChiSo.DA_CHOT.equals(chiSo.getTrangThai())) {
+                throw new BusinessException("Phòng chưa có chỉ số điện nước tháng trước ("
+                        + thangTruoc + ") hoặc chỉ số chưa được chốt.");
+            }
         }
 
         BangGiaDienNuoc bangGia = bangGiaRepository.findTopByOrderByIdAsc()
@@ -176,12 +202,9 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         hoaDon.setTongTien(BigDecimal.ZERO); // se cap nhat sau
         hoaDon = hoaDonRepository.save(hoaDon);
 
-        // Goi tat ca Strategy -> thu thap chi tiet
+        // Goi tat ca Strategy -> thu thap chi tiet da hinh theo thu tu @Order
         List<HoaDonChiTiet> danhSachChiTiet = new ArrayList<>();
-        danhSachChiTiet.addAll(tinhTienPhong.tinh(context));
-        danhSachChiTiet.addAll(tinhTienDien.tinh(context));
-        danhSachChiTiet.addAll(tinhTienNuoc.tinh(context));
-        danhSachChiTiet.addAll(tinhTienDichVu.tinh(context));
+        strategies.forEach(s -> danhSachChiTiet.addAll(s.tinh(context)));
 
         // Gan hoa_don_id va luu
         final HoaDon finalHoaDon = hoaDon;
@@ -198,16 +221,24 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         return toResponse(hoaDon);
     }
 
-    /** Khach nop tien: upload anh chuyen khoan, chuyen sang CHO_DUYET. */
-    public HoaDonResponse khachNopTien(Integer id, String anhChuyenKhoan) {
-        HoaDon hd = hoaDonRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn", id));
+    public void validateKhachNopTien(Integer id, Integer nguoiDungId) {
+        HoaDon hd = getHoaDonOfNguoiDung(id, nguoiDungId);
         if (!TrangThaiHoaDon.CHUA_THANH_TOAN.equals(hd.getTrangThai())) {
             throw new BusinessException("Hóa đơn này không ở trạng thái Chưa thanh toán.");
         }
+    }
+
+    /** Khach nop tien: upload anh chuyen khoan, chuyen sang CHO_DUYET. */
+    public HoaDonResponse khachNopTien(Integer id, String anhChuyenKhoan, Integer nguoiDungId) {
+        validateKhachNopTien(id, nguoiDungId);
+        HoaDon hd = getHoaDonOfNguoiDung(id, nguoiDungId);
         hd.setAnhChuyenKhoan(anhChuyenKhoan);
         hd.setTrangThai(TrangThaiHoaDon.CHO_DUYET);
         return toResponse(hoaDonRepository.save(hd));
+    }
+
+    public HoaDonResponse khachNopTien(Integer id, String anhChuyenKhoan) {
+        return khachNopTien(id, anhChuyenKhoan, null);
     }
 
     /** Chu tro xac nhan da nhan tien. */
@@ -220,6 +251,27 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         hd.setTrangThai(TrangThaiHoaDon.DA_THANH_TOAN);
         hd.setNgayThanhToan(LocalDateTime.now());
         return toResponse(hoaDonRepository.save(hd));
+    }
+
+    private final java.util.Map<Integer, String> lyDoTuChoiMap = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Chu tro tu choi thanh toan -> dua hoa don ve CHUA_THANH_TOAN. */
+    public HoaDonResponse tuChoiThanhToan(Integer id, String lyDo) {
+        HoaDon hd = hoaDonRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hóa đơn", id));
+        if (!TrangThaiHoaDon.CHO_DUYET.equals(hd.getTrangThai())) {
+            throw new BusinessException("Chỉ có thể từ chối hóa đơn đang ở trạng thái Chờ duyệt.");
+        }
+        hd.setTrangThai(TrangThaiHoaDon.CHUA_THANH_TOAN);
+        hd.setAnhChuyenKhoan(null);
+        if (lyDo != null && !lyDo.isBlank()) {
+            lyDoTuChoiMap.put(id, lyDo);
+        }
+        return toResponse(hoaDonRepository.save(hd));
+    }
+
+    public HoaDonResponse tuChoiThanhToan(Integer id) {
+        return tuChoiThanhToan(id, null);
     }
 
     @Override
@@ -246,6 +298,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         r.setAnhChuyenKhoan(entity.getAnhChuyenKhoan());
         r.setNgayTao(entity.getNgayTao());
         r.setNgayThanhToan(entity.getNgayThanhToan());
+        r.setLyDoTuChoi(lyDoTuChoiMap.get(entity.getId()));
 
         // Load chi tiet
         List<HoaDonChiTietResponse> danhSachChiTiet = chiTietRepository

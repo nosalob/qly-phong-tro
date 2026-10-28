@@ -4,7 +4,6 @@ import com.qlytro.dto.request.SuCoRequest;
 import com.qlytro.dto.response.SuCoResponse;
 import com.qlytro.entity.*;
 import com.qlytro.entity.enums.NguyenNhanSuCo;
-import com.qlytro.entity.enums.TrangThaiHopDong;
 import com.qlytro.entity.enums.TrangThaiSuCo;
 import com.qlytro.exception.BusinessException;
 import com.qlytro.exception.ResourceNotFoundException;
@@ -122,7 +121,21 @@ public class SuCoService implements BaseService<SuCoResponse, Integer> {
     public SuCoResponse capNhatTrangThai(Integer id, Integer trangThaiValue) {
         SuCo suCo = suCoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sự cố", id));
-        suCo.setTrangThai(TrangThaiSuCo.fromValue(trangThaiValue));
+        if (TrangThaiSuCo.HOAN_THANH.equals(suCo.getTrangThai())) {
+            throw new BusinessException("Sự cố đã hoàn thành, không thể thay đổi trạng thái.");
+        }
+        TrangThaiSuCo target = TrangThaiSuCo.fromValue(trangThaiValue);
+        if (TrangThaiSuCo.HOAN_THANH.equals(target)) {
+            throw new BusinessException("Chuyển sang trạng thái Hoàn thành phải thông qua chức năng Hoàn thành và có nguyên nhân.");
+        }
+        if (TrangThaiSuCo.DANG_XU_LY.equals(target)) {
+            if (!TrangThaiSuCo.MOI.equals(suCo.getTrangThai())) {
+                throw new BusinessException("Chỉ sự cố đang ở trạng thái 'Mới' mới có thể chuyển sang 'Đang xử lý'.");
+            }
+        } else {
+            throw new BusinessException("Không hỗ trợ chuyển về trạng thái này.");
+        }
+        suCo.setTrangThai(target);
         return toResponse(suCoRepository.save(suCo));
     }
 
@@ -134,6 +147,9 @@ public class SuCoService implements BaseService<SuCoResponse, Integer> {
     public SuCoResponse hoanThanh(Integer id, Integer nguyenNhanValue) {
         SuCo suCo = suCoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Sự cố", id));
+        if (TrangThaiSuCo.HOAN_THANH.equals(suCo.getTrangThai())) {
+            throw new BusinessException("Sự cố này đã hoàn thành trước đó, không thể mở lại hoặc đổi nguyên nhân.");
+        }
         if (nguyenNhanValue == null) {
             throw new BusinessException("Vui lòng chọn nguyên nhân khi hoàn thành sự cố.");
         }

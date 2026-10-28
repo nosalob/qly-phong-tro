@@ -13,6 +13,7 @@ import com.qlytro.service.base.BaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -53,9 +54,35 @@ public class ChiSoDienNuocService implements BaseService<ChiSoDienNuocResponse, 
     }
 
     public ChiSoDienNuocResponse create(ChiSoDienNuocRequest request) {
+        // Validate: khong cho nhap thang o tuong lai
+        YearMonth currentYm = YearMonth.now();
+        YearMonth reqYm = YearMonth.parse(request.getThangNam());
+        if (reqYm.isAfter(currentYm)) {
+            throw new BusinessException("Không thể nhập chỉ số cho tháng ở tương lai (" + request.getThangNam() + ").");
+        }
+
         // Validate: da co chi so cho phong nay trong thang nay chua?
         if (chiSoRepo.existsByPhong_IdAndThangNam(request.getPhongId(), request.getThangNam())) {
             throw new BusinessException("Phòng này đã có chỉ số tháng " + request.getThangNam() + ".");
+        }
+
+        // Kiem tra thang lien truoc
+        String thangLienTruoc = reqYm.minusMonths(1).toString();
+        var prevChiSoOpt = chiSoRepo.findByPhong_IdAndThangNam(request.getPhongId(), thangLienTruoc);
+        if (prevChiSoOpt.isPresent()) {
+            ChiSoDienNuoc prevChiSo = prevChiSoOpt.get();
+            if (request.getChiSoDienCu() != null && prevChiSo.getChiSoDienMoi() != null
+                    && request.getChiSoDienCu().compareTo(prevChiSo.getChiSoDienMoi()) != 0) {
+                throw new BusinessException("Chỉ số điện cũ (" + request.getChiSoDienCu()
+                        + ") phải bằng chỉ số điện mới của tháng liền trước ("
+                        + prevChiSo.getChiSoDienMoi() + ").");
+            }
+            if (request.getChiSoNuocCu() != null && prevChiSo.getChiSoNuocMoi() != null
+                    && request.getChiSoNuocCu().compareTo(prevChiSo.getChiSoNuocMoi()) != 0) {
+                throw new BusinessException("Chỉ số nước cũ (" + request.getChiSoNuocCu()
+                        + ") phải bằng chỉ số nước mới của tháng liền trước ("
+                        + prevChiSo.getChiSoNuocMoi() + ").");
+            }
         }
 
         // Tu dong dien chi so cu neu chua co

@@ -14,6 +14,14 @@ public interface HopDongKhachThueRepository extends JpaRepository<HopDongKhachTh
 
     List<HopDongKhachThue> findByHopDong_Id(Integer hopDongId);
 
+    @Query("""
+            SELECT hdkt FROM HopDongKhachThue hdkt
+            JOIN FETCH hdkt.khachThue kt
+            WHERE hdkt.hopDong.id = :hopDongId
+            ORDER BY hdkt.laDaiDien DESC, hdkt.id ASC
+            """)
+    List<HopDongKhachThue> findByHopDongIdWithKhachThue(@Param("hopDongId") Integer hopDongId);
+
     List<HopDongKhachThue> findByHopDong_IdAndDangO(Integer hopDongId, Boolean dangO);
 
     Optional<HopDongKhachThue> findByHopDong_IdAndKhachThue_Id(Integer hopDongId, Integer khachThueId);
@@ -21,6 +29,7 @@ public interface HopDongKhachThueRepository extends JpaRepository<HopDongKhachTh
     Optional<HopDongKhachThue> findByHopDong_IdAndLaDaiDienTrue(Integer hopDongId);
 
     boolean existsByHopDong_IdAndKhachThue_Id(Integer hopDongId, Integer khachThueId);
+    boolean existsByKhachThue_Id(Integer khachThueId);
 
     /** Tim tat ca hop dong cua 1 khach thue. */
     List<HopDongKhachThue> findByKhachThue_Id(Integer khachThueId);

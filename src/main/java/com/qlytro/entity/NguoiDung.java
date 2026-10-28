@@ -38,6 +38,10 @@ public class NguoiDung {
     @Builder.Default
     private TrangThaiNguoiDung trangThai = TrangThaiNguoiDung.ACTIVE;
 
+    @Column(name = "must_change_password", nullable = false)
+    @Builder.Default
+    private Boolean mustChangePassword = false;
+
     @Column(name = "ngay_tao", nullable = false, updatable = false)
     private LocalDateTime ngayTao;
 

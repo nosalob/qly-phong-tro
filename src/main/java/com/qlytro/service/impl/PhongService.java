@@ -24,15 +24,21 @@ public class PhongService implements BaseService<PhongResponse, Integer> {
     private final ToaNhaRepository toaNhaRepository;
     private final HopDongRepository hopDongRepository;
     private final PhongThietBiRepository phongThietBiRepository;
+    private final com.qlytro.repository.ChiSoDienNuocRepository chiSoRepository;
+    private final com.qlytro.repository.SuCoRepository suCoRepository;
 
     public PhongService(PhongRepository phongRepository,
                         ToaNhaRepository toaNhaRepository,
                         HopDongRepository hopDongRepository,
-                        PhongThietBiRepository phongThietBiRepository) {
+                        PhongThietBiRepository phongThietBiRepository,
+                        com.qlytro.repository.ChiSoDienNuocRepository chiSoRepository,
+                        com.qlytro.repository.SuCoRepository suCoRepository) {
         this.phongRepository = phongRepository;
         this.toaNhaRepository = toaNhaRepository;
         this.hopDongRepository = hopDongRepository;
         this.phongThietBiRepository = phongThietBiRepository;
+        this.chiSoRepository = chiSoRepository;
+        this.suCoRepository = suCoRepository;
     }
 
     @Override
@@ -80,14 +86,38 @@ public class PhongService implements BaseService<PhongResponse, Integer> {
         return toResponse(phongRepository.save(phong));
     }
 
+    public PhongResponse ngungSuDung(Integer id) {
+        Phong phong = phongRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Phòng", id));
+        if (hopDongRepository.existsByPhong_IdAndTrangThai(id, com.qlytro.entity.enums.TrangThaiHopDong.ACTIVE)) {
+            throw new BusinessException("Phòng đang có hợp đồng hoạt động (ACTIVE), không thể ngừng sử dụng.");
+        }
+        if (!TrangThaiPhong.TRONG.equals(phong.getTrangThai())) {
+            throw new BusinessException("Chỉ phòng đang ở trạng thái Trống mới có thể chuyển sang Ngừng sử dụng.");
+        }
+        phong.setTrangThai(TrangThaiPhong.NGUNG_SU_DUNG);
+        return toResponse(phongRepository.save(phong));
+    }
+
+    public PhongResponse moLai(Integer id) {
+        Phong phong = phongRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Phòng", id));
+        if (!TrangThaiPhong.NGUNG_SU_DUNG.equals(phong.getTrangThai())) {
+            throw new BusinessException("Chỉ phòng đang Ngừng sử dụng mới có thể mở lại.");
+        }
+        phong.setTrangThai(TrangThaiPhong.TRONG);
+        return toResponse(phongRepository.save(phong));
+    }
+
     @Override
     public void deleteById(Integer id) {
         Phong phong = phongRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Phòng", id));
-        // Rang buoc: khong xoa phong dang co hop dong ACTIVE
-        if (hopDongRepository.existsByPhong_IdAndTrangThai(id,
-                com.qlytro.entity.enums.TrangThaiHopDong.ACTIVE)) {
-            throw new BusinessException("Không thể xóa phòng đang có hợp đồng hiệu lực.");
+        // Rang buoc: khong xoa phong da co hop dong, chi so hoac su co
+        if (hopDongRepository.existsByPhong_Id(id)
+                || chiSoRepository.existsByPhong_Id(id)
+                || suCoRepository.existsByPhong_Id(id)) {
+            throw new BusinessException("Phòng đã có lịch sử hợp đồng, chỉ số điện nước hoặc sự cố. Vui lòng chuyển trạng thái phòng sang 'Ngừng sử dụng' thay vì xóa.");
         }
         phongRepository.delete(phong);
     }
@@ -101,9 +131,13 @@ public class PhongService implements BaseService<PhongResponse, Integer> {
         phong.setSoPhong(request.getSoPhong());
         phong.setDienTich(request.getDienTich());
         phong.setGiaThueTheoMacDinh(request.getGiaThueTheoMacDinh());
-        phong.setTrangThai(request.getTrangThai() != null
+        TrangThaiPhong tt = request.getTrangThai() != null
                 ? TrangThaiPhong.fromValue(request.getTrangThai())
-                : TrangThaiPhong.TRONG);
+                : TrangThaiPhong.TRONG;
+        if (TrangThaiPhong.DANG_THUE.equals(tt)) {
+            throw new BusinessException("Không thể tạo phòng ở trạng thái 'Đang thuê'. Phòng mới chỉ có thể là Trống hoặc Ngừng sử dụng.");
+        }
+        phong.setTrangThai(tt);
         phong.setMoTa(request.getMoTa());
     }
 

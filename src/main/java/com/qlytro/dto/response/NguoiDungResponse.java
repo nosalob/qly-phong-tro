@@ -16,5 +16,6 @@ public class NguoiDungResponse {
     private String vaiTroLabel;
     private TrangThaiNguoiDung trangThai;
     private String trangThaiLabel;
+    private Boolean mustChangePassword;
     private LocalDateTime ngayTao;
 }

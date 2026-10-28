@@ -12,8 +12,12 @@ import com.qlytro.service.base.BaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import com.qlytro.service.strategy.TinhTienContext;
+import com.qlytro.service.strategy.TinhTienDienStrategy;
+import com.qlytro.service.strategy.TinhTienNuocStrategy;
 
 @Service
 @Transactional
@@ -27,6 +31,8 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
     private final BangGiaDienNuocRepository bangGiaRepository;
     private final HoaDonRepository hoaDonRepository;
     private final BoiThuongThietHaiRepository boiThuongRepository;
+    private final TinhTienDienStrategy tinhTienDien;
+    private final TinhTienNuocStrategy tinhTienNuoc;
 
     public HopDongService(HopDongRepository hopDongRepository,
                           HopDongKhachThueRepository hdktRepository,
@@ -35,7 +41,9 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
                           ChiSoDienNuocRepository chiSoRepository,
                           BangGiaDienNuocRepository bangGiaRepository,
                           HoaDonRepository hoaDonRepository,
-                          BoiThuongThietHaiRepository boiThuongRepository) {
+                          BoiThuongThietHaiRepository boiThuongRepository,
+                          TinhTienDienStrategy tinhTienDien,
+                          TinhTienNuocStrategy tinhTienNuoc) {
         this.hopDongRepository = hopDongRepository;
         this.hdktRepository = hdktRepository;
         this.phongRepository = phongRepository;
@@ -44,6 +52,8 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
         this.bangGiaRepository = bangGiaRepository;
         this.hoaDonRepository = hoaDonRepository;
         this.boiThuongRepository = boiThuongRepository;
+        this.tinhTienDien = tinhTienDien;
+        this.tinhTienNuoc = tinhTienNuoc;
     }
 
     @Override
@@ -75,6 +85,10 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
         if (!TrangThaiPhong.TRONG.equals(phong.getTrangThai())) {
             throw new BusinessException("Phòng " + phong.getSoPhong()
                     + " hiện không ở trạng thái Trống, không thể ký hợp đồng mới.");
+        }
+        if (hopDongRepository.existsByPhong_IdAndTrangThai(phong.getId(), TrangThaiHopDong.ACTIVE)) {
+            throw new BusinessException("Phòng " + phong.getSoPhong()
+                    + " hiện đã có hợp đồng đang hoạt động (ACTIVE).");
         }
 
         KhachThue khachThue = khachThueRepository.findById(request.getKhachThueId())
@@ -124,23 +138,33 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
         List<ChiSoDienNuoc> dsChiSo = chiSoRepository.findByPhong_IdOrderByThangNamDesc(hd.getPhong().getId());
         BangGiaDienNuoc bangGia = bangGiaRepository.findTopByOrderByIdAsc().orElse(null);
 
+        YearMonth thangBatDau = YearMonth.from(hd.getNgayBatDau());
         for (ChiSoDienNuoc chiSo : dsChiSo) {
-            if (TrangThaiChiSo.DA_CHOT.equals(chiSo.getTrangThai())) {
-                boolean daCoHoaDon = hoaDonRepository.existsByHopDong_IdAndThangNam(hd.getId(), chiSo.getThangNam());
-                if (!daCoHoaDon && bangGia != null) {
-                    BigDecimal soDien = (chiSo.getChiSoDienMoi() != null && chiSo.getChiSoDienCu() != null)
-                            ? chiSo.getChiSoDienMoi().subtract(chiSo.getChiSoDienCu())
-                            : BigDecimal.ZERO;
-                    if (soDien.compareTo(BigDecimal.ZERO) > 0 && bangGia.getDonGiaDien() != null) {
-                        tienDienNuocChuaHoaDon = tienDienNuocChuaHoaDon.add(soDien.multiply(bangGia.getDonGiaDien()));
-                    }
+            if (!TrangThaiChiSo.DA_CHOT.equals(chiSo.getTrangThai())) continue;
+            YearMonth thangChiSo = YearMonth.parse(chiSo.getThangNam());
+            if (thangChiSo.isBefore(thangBatDau)) continue;   // chỉ số của hợp đồng trước
+            if (hoaDonRepository.existsByHopDong_IdAndThangNam(
+                    hd.getId(), thangChiSo.plusMonths(1).toString())) continue; // đã thu ở hóa đơn M+1
 
-                    BigDecimal soNuoc = (chiSo.getChiSoNuocMoi() != null && chiSo.getChiSoNuocCu() != null)
-                            ? chiSo.getChiSoNuocMoi().subtract(chiSo.getChiSoNuocCu())
-                            : BigDecimal.ZERO;
-                    if (soNuoc.compareTo(BigDecimal.ZERO) > 0 && bangGia.getDonGiaNuoc() != null) {
-                        tienDienNuocChuaHoaDon = tienDienNuocChuaHoaDon.add(soNuoc.multiply(bangGia.getDonGiaNuoc()));
-                    }
+            if (bangGia == null) {
+                throw new BusinessException("Chưa có bảng giá điện nước. Vui lòng thiết lập bảng giá trước khi kết thúc hợp đồng.");
+            }
+
+            TinhTienContext context = TinhTienContext.builder()
+                    .hopDong(hd)
+                    .chiSoDienNuoc(chiSo)
+                    .bangGiaDienNuoc(bangGia)
+                    .thangNam(thangChiSo.toString())
+                    .build();
+
+            for (HoaDonChiTiet ct : tinhTienDien.tinh(context)) {
+                if (ct.getThanhTien() != null) {
+                    tienDienNuocChuaHoaDon = tienDienNuocChuaHoaDon.add(ct.getThanhTien());
+                }
+            }
+            for (HoaDonChiTiet ct : tinhTienNuoc.tinh(context)) {
+                if (ct.getThanhTien() != null) {
+                    tienDienNuocChuaHoaDon = tienDienNuocChuaHoaDon.add(ct.getThanhTien());
                 }
             }
         }
@@ -148,7 +172,7 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
         // 2. Tong cac dong BoiThuongThietHai co nguon_phat_hien = LUC_TRA_PHONG va trang_thai chua xu ly
         List<BoiThuongThietHai> dsBoiThuong = boiThuongRepository.findByHopDong_Id(hd.getId());
         BigDecimal tongBoiThuong = BigDecimal.ZERO;
-        List<BoiThuongThietHai> listCanCapNhat = new ArrayList<>();
+        List<BoiThuongThietHai> listBoiThuongLucTraPhong = new ArrayList<>();
 
         for (BoiThuongThietHai bt : dsBoiThuong) {
             if (NguonPhatHienBoiThuong.LUC_TRA_PHONG.equals(bt.getNguonPhatHien())
@@ -156,17 +180,55 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
                 if (bt.getSoTien() != null) {
                     tongBoiThuong = tongBoiThuong.add(bt.getSoTien());
                 }
-                bt.setTrangThai(TrangThaiBoiThuong.TRANG_THAI_1);
-                listCanCapNhat.add(bt);
+                listBoiThuongLucTraPhong.add(bt);
             }
         }
-        if (!listCanCapNhat.isEmpty()) {
-            boiThuongRepository.saveAll(listCanCapNhat);
+        // 2.1. Tim tat ca hoa don chua thanh toan cua hop dong nay (sap xep tu cu nhat den moi nhat)
+        List<HoaDon> dsHoaDonChuaThanhToan = hoaDonRepository.findByHopDong_IdOrderByThangNamDesc(hd.getId()).stream()
+                .filter(h -> !TrangThaiHoaDon.DA_THANH_TOAN.equals(h.getTrangThai()))
+                .sorted(java.util.Comparator.comparing(HoaDon::getThangNam))
+                .toList();
+        BigDecimal tongHoaDonChuaThanhToan = BigDecimal.ZERO;
+        for (HoaDon h : dsHoaDonChuaThanhToan) {
+            if (h.getTongTien() != null) {
+                tongHoaDonChuaThanhToan = tongHoaDonChuaThanhToan.add(h.getTongTien());
+            }
         }
 
-        // 3. Tinh tien coc con lai (cho phep am)
-        BigDecimal tongCongNo = tienDienNuocChuaHoaDon.add(tongBoiThuong);
+        // 3. Tinh toan tien coc kha dung de khau tru tung khoan
         BigDecimal tienCocGoc = hd.getTienCoc() != null ? hd.getTienCoc() : BigDecimal.ZERO;
+        // Uu tien 1: Tru tien dien nuoc phat sinh luc tra phong
+        BigDecimal cocKhaDung = tienCocGoc.subtract(tienDienNuocChuaHoaDon);
+
+        // Uu tien 2: Khau tru lan luot cac hoa don chua thanh toan
+        for (HoaDon h : dsHoaDonChuaThanhToan) {
+            BigDecimal tienHd = h.getTongTien() != null ? h.getTongTien() : BigDecimal.ZERO;
+            if (cocKhaDung.compareTo(tienHd) >= 0) {
+                // Coc du bu hoa don nay -> danh dau da thanh toan
+                cocKhaDung = cocKhaDung.subtract(tienHd);
+                h.setTrangThai(TrangThaiHoaDon.DA_THANH_TOAN);
+                h.setNgayThanhToan(java.time.LocalDateTime.now());
+                hoaDonRepository.save(h);
+            } else {
+                // Coc khong du bu tron ven hoa don nay -> GIU NGUYEN CHUA_THANH_TOAN de khach thue thay va thanh toan
+                cocKhaDung = BigDecimal.ZERO;
+            }
+        }
+
+        // Uu tien 3: Khau tru cac khoan boi thuong luc tra phong (neu coc con du)
+        for (BoiThuongThietHai bt : listBoiThuongLucTraPhong) {
+            BigDecimal tienBt = bt.getSoTien() != null ? bt.getSoTien() : BigDecimal.ZERO;
+            if (cocKhaDung.compareTo(tienBt) >= 0) {
+                // Coc du bu khoan boi thuong nay -> danh dau da giai quyet
+                cocKhaDung = cocKhaDung.subtract(tienBt);
+                bt.setTrangThai(TrangThaiBoiThuong.TRANG_THAI_1);
+                boiThuongRepository.save(bt);
+            }
+            // Neu khong du bu: GIU NGUYEN TRANG_THAI_0 de khach thue thay yeu cau boi thuong va hoan tat
+        }
+
+        // 4. Tinh tong cong no va tien coc con lai (so am nghia la khach thue con thieu no chu tro)
+        BigDecimal tongCongNo = tongHoaDonChuaThanhToan.add(tienDienNuocChuaHoaDon).add(tongBoiThuong);
         BigDecimal tienCocConLai = tienCocGoc.subtract(tongCongNo);
 
         hd.setTienCocConLai(tienCocConLai);
@@ -239,12 +301,16 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
             throw new BusinessException("Khách thuê này hiện đã là người đại diện.");
         }
 
-        // Tat quyen dai dien cua nguoi cu
+        if (hdktMoi.getKhachThue().getNguoiDung() == null) {
+            throw new BusinessException("Hãy tạo và liên kết tài khoản cho người này trước khi chuyển quyền đại diện.");
+        }
+
+        // Tat quyen dai dien cua nguoi cu va flush ngay de dam bao DB khong xung dot
         List<HopDongKhachThue> dsKhach = hdktRepository.findByHopDong_Id(hopDongId);
         for (HopDongKhachThue hdkt : dsKhach) {
             if (Boolean.TRUE.equals(hdkt.getLaDaiDien())) {
                 hdkt.setLaDaiDien(false);
-                hdktRepository.save(hdkt);
+                hdktRepository.saveAndFlush(hdkt);
             }
         }
 

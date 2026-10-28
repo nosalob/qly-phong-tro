@@ -24,6 +24,9 @@ public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
+    @org.springframework.beans.factory.annotation.Value("${app.admin.initial-password:admin@123}")
+    private String adminPassword;
+
     @Bean
     public CommandLineRunner initData(NguoiDungRepository nguoiDungRepo,
                                       BangGiaDienNuocRepository bangGiaRepo,
@@ -33,13 +36,14 @@ public class DataInitializer {
             if (!nguoiDungRepo.existsByUsername("admin")) {
                 NguoiDung admin = NguoiDung.builder()
                         .username("admin")
-                        .password(passwordEncoder.encode("admin@123"))
+                        .password(passwordEncoder.encode(adminPassword))
                         .hoTen("Chủ Trọ Admin")
                         .vaiTro(VaiTroNguoiDung.CHU_TRO)
                         .trangThai(TrangThaiNguoiDung.ACTIVE)
+                        .mustChangePassword(false)
                         .build();
                 nguoiDungRepo.save(admin);
-                log.info("✅ Đã tạo tài khoản admin mặc định: admin / admin@123");
+                log.info("✅ Đã tạo tài khoản admin mặc định: admin");
             }
 
             // --- Bang gia dien nuoc mac dinh ---

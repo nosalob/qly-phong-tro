@@ -31,8 +31,26 @@ public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
             WHERE hdkt.khachThue.id = :khachThueId
               AND hd.trangThai = com.qlytro.entity.enums.TrangThaiHopDong.ACTIVE
               AND hdkt.dangO = true
+            ORDER BY hd.id DESC
             """)
-    Optional<HopDong> findActiveByKhachThueId(@Param("khachThueId") Integer khachThueId);
+    List<HopDong> findAllActiveByKhachThueId(@Param("khachThueId") Integer khachThueId);
+
+    default Optional<HopDong> findActiveByKhachThueId(Integer khachThueId) {
+        List<HopDong> list = findAllActiveByKhachThueId(khachThueId);
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
+
+    /** Lay tat ca hop dong (ca active lan da ket thuc) cua khach thue, uu tien moi nhat truoc. */
+    @Query("""
+            SELECT hd FROM HopDong hd
+            JOIN FETCH hd.phong p
+            JOIN FETCH p.toaNha tn
+            JOIN HopDongKhachThue hdkt ON hdkt.hopDong = hd
+            WHERE hdkt.khachThue.id = :khachThueId
+            ORDER BY hd.id DESC
+            """)
+    List<HopDong> findByKhachThueIdLatestFirst(@Param("khachThueId") Integer khachThueId);
 
     boolean existsByPhong_IdAndTrangThai(Integer phongId, TrangThaiHopDong trangThai);
+    boolean existsByPhong_Id(Integer phongId);
 }

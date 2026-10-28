@@ -1,7 +1,6 @@
 package com.qlytro.controller;
 
 import com.qlytro.entity.KhachThue;
-import com.qlytro.repository.HopDongKhachThueRepository;
 import com.qlytro.repository.HopDongRepository;
 import com.qlytro.repository.KhachThueRepository;
 import com.qlytro.security.CustomUserDetails;

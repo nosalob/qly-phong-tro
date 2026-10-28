@@ -83,10 +83,23 @@ public class BoiThuongThietHaiService implements BaseService<BoiThuongThietHaiRe
         HopDong hopDong = hopDongRepository.findById(request.getHopDongId())
                 .orElseThrow(() -> new ResourceNotFoundException("Hợp đồng", request.getHopDongId()));
 
+        if (!com.qlytro.entity.enums.TrangThaiHopDong.ACTIVE.equals(hopDong.getTrangThai())) {
+            throw new BusinessException("Hợp đồng này đã kết thúc, không thể lập biên bản bồi thường.");
+        }
+
         SuCo suCo = null;
         if (request.getSuCoId() != null) {
             suCo = suCoRepository.findById(request.getSuCoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Sự cố", request.getSuCoId()));
+            if (!suCo.getPhong().getId().equals(hopDong.getPhong().getId())) {
+                throw new BusinessException("Sự cố được chọn không thuộc cùng phòng với hợp đồng.");
+            }
+            if (!com.qlytro.entity.enums.TrangThaiSuCo.HOAN_THANH.equals(suCo.getTrangThai())) {
+                throw new BusinessException("Chỉ sự cố đã hoàn thành mới có thể tạo bồi thường.");
+            }
+            if (!com.qlytro.entity.enums.NguyenNhanSuCo.DO_NGUOI_O_LAM_HONG.equals(suCo.getNguyenNhan())) {
+                throw new BusinessException("Chỉ sự cố có nguyên nhân 'Do người ở làm hỏng' mới tạo bồi thường thiệt hại.");
+            }
         }
 
         NguonPhatHienBoiThuong nguon = NguonPhatHienBoiThuong.fromValue(request.getNguonPhatHien());
@@ -104,20 +117,43 @@ public class BoiThuongThietHaiService implements BaseService<BoiThuongThietHaiRe
         return toResponse(boiThuongRepository.save(bt));
     }
 
-    public BoiThuongThietHaiResponse khachNopTien(Integer id, String anhChuyenKhoan) {
+    @Transactional(readOnly = true)
+    public BoiThuongThietHaiResponse findByIdOfNguoiDung(Integer id, Integer nguoiDungId) {
+        return toResponse(getBoiThuongOfNguoiDung(id, nguoiDungId));
+    }
+
+    private BoiThuongThietHai getBoiThuongOfNguoiDung(Integer id, Integer nguoiDungId) {
         BoiThuongThietHai bt = boiThuongRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bồi thường thiệt hại", id));
+        if (nguoiDungId != null) {
+            KhachThue khachThue = khachThueRepository.findByNguoiDung_Id(nguoiDungId).orElse(null);
+            if (khachThue == null || !hdktRepository.existsByHopDong_IdAndKhachThue_Id(bt.getHopDong().getId(), khachThue.getId())) {
+                throw new ResourceNotFoundException("Bồi thường thiệt hại", id);
+            }
+        }
+        return bt;
+    }
 
+    public void validateKhachNopTien(Integer id, Integer nguoiDungId) {
+        BoiThuongThietHai bt = getBoiThuongOfNguoiDung(id, nguoiDungId);
         if (!NguonPhatHienBoiThuong.TRONG_LUC_O.equals(bt.getNguonPhatHien())) {
             throw new BusinessException("Khoản bồi thường này sẽ được khấu trừ vào tiền cọc khi trả phòng.");
         }
         if (!TrangThaiBoiThuong.TRANG_THAI_0.equals(bt.getTrangThai())) {
             throw new BusinessException("Khoản bồi thường này không ở trạng thái Chưa thanh toán.");
         }
+    }
 
+    public BoiThuongThietHaiResponse khachNopTien(Integer id, String anhChuyenKhoan, Integer nguoiDungId) {
+        validateKhachNopTien(id, nguoiDungId);
+        BoiThuongThietHai bt = getBoiThuongOfNguoiDung(id, nguoiDungId);
         bt.setAnhChuyenKhoan(anhChuyenKhoan);
         bt.setTrangThai(TrangThaiBoiThuong.TRANG_THAI_1);
         return toResponse(boiThuongRepository.save(bt));
+    }
+
+    public BoiThuongThietHaiResponse khachNopTien(Integer id, String anhChuyenKhoan) {
+        return khachNopTien(id, anhChuyenKhoan, null);
     }
 
     public BoiThuongThietHaiResponse xacNhanThanhToan(Integer id) {
