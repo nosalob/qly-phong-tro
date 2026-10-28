@@ -16,8 +16,18 @@
             <h5><i class="bi bi-shield-plus me-2" style="color:#6366f1"></i>Thông tin bồi thường</h5>
         </div>
         <form th:action="@{/landlord/boi-thuong/them}" th:object="${request}" method="post" class="p-4">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <input type="hidden" th:field="*{suCoId}">
+            <div class="mb-3">
+                <label class="form-label fw-500">Sự cố liên quan (nếu có)</label>
+                <select th:field="*{suCoId}" class="form-select">
+                    <option value="">-- Không gắn sự cố (bồi thường trực tiếp / phát hiện lúc trả phòng) --</option>
+                    <option th:each="sc : ${danhSachSuCo}"
+                            th:value="${sc.id}"
+                            th:text="'Sự cố #' + ${sc.id} + ' - Phòng ' + ${sc.soPhong} + ' (' + ${sc.moTa} + ') - Trạng thái: ' + ${sc.trangThaiLabel} + (${sc.nguyenNhanLabel != null} ? ' - Nguyên nhân: ' + ${sc.nguyenNhanLabel} : '')"></option>
+                </select>
+                <div class="form-text text-muted" style="font-size:.78rem;">
+                    Lưu ý: Chỉ sự cố đã hoàn thành và có nguyên nhân "Do người ở làm hỏng" mới được lập bồi thường.
+                </div>
+            </div>
 
             <div class="mb-3">
                 <label class="form-label fw-500">Hợp đồng phòng thuê <span class="text-danger">*</span></label>

@@ -47,6 +47,9 @@
                     </td>
                     <td th:text="${#temporals.format(item.ngayTao,'dd/MM/yyyy')}"></td>
                     <td>
+                        <span th:if="${item.mustChangePassword}" class="badge bg-warning text-dark me-1" title="Tài khoản này cần đổi mật khẩu ở lần đăng nhập tới">
+                            <i class="bi bi-key-fill"></i> Cần đổi MK
+                        </span>
                         <form th:if="${item.trangThai != null and item.trangThai.name() == 'ACTIVE'}"
                               th:action="@{/landlord/nguoi-dung/{id}/khoa(id=${item.id})}" method="post"
                               class="d-inline">
@@ -61,6 +64,15 @@
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                             <button type="submit" class="btn btn-sm btn-outline-success" style="border-radius:7px;" title="Mở khóa">
                                 <i class="bi bi-unlock"></i>
+                            </button>
+                        </form>
+                        <!-- Nút Reset Mật khẩu về 123456 -->
+                        <form th:action="@{/landlord/nguoi-dung/{id}/reset-mat-khau(id=${item.id})}" method="post"
+                              class="d-inline"
+                              onsubmit="return confirm('Bạn có chắc muốn reset mật khẩu tài khoản này về 123456?\nNgười dùng sẽ bắt buộc phải đổi mật khẩu khi đăng nhập.')">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-sm btn-outline-info" style="border-radius:7px;" title="Reset mật khẩu về 123456">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset MK
                             </button>
                         </form>
                     </td>

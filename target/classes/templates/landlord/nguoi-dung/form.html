@@ -13,34 +13,47 @@
         <div class="p-4">
             <form th:action="@{/landlord/nguoi-dung/them}" th:object="${request}" method="post" novalidate>
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <!-- Thong bao loi tong hop neu validate that bai -->
+                <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger mb-3 py-2" style="font-size:0.875rem;">
+                    <div class="fw-600 mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vui lòng kiểm tra lại:</div>
+                    <ul class="mb-0 ps-3">
+                        <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                    </ul>
+                </div>
+
                 <div class="row g-3 mb-3">
                     <div class="col-6">
                         <label for="username" class="form-label fw-500">Username <span class="text-danger">*</span></label>
                         <input type="text" id="username" th:field="*{username}" class="form-control"
-                               th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'" autocomplete="off">
+                               th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'" autocomplete="off" placeholder="Từ 4-50 ký tự">
                         <div class="invalid-feedback" th:errors="*{username}"></div>
                     </div>
                     <div class="col-6">
                         <label for="password" class="form-label fw-500">Mật khẩu <span class="text-danger">*</span></label>
                         <input type="password" id="password" th:field="*{password}" class="form-control"
-                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'" autocomplete="new-password">
+                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự">
                         <div class="invalid-feedback" th:errors="*{password}"></div>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="hoTen" class="form-label fw-500">Họ tên <span class="text-danger">*</span></label>
                     <input type="text" id="hoTen" th:field="*{hoTen}" class="form-control"
-                           th:classappend="${#fields.hasErrors('hoTen')} ? 'is-invalid'">
+                           th:classappend="${#fields.hasErrors('hoTen')} ? 'is-invalid'" placeholder="Nguyễn Văn A">
                     <div class="invalid-feedback" th:errors="*{hoTen}"></div>
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-6">
                         <label for="sdt" class="form-label fw-500">Số điện thoại</label>
-                        <input type="text" id="sdt" th:field="*{sdt}" class="form-control">
+                        <input type="text" id="sdt" th:field="*{sdt}" class="form-control"
+                               th:classappend="${#fields.hasErrors('sdt')} ? 'is-invalid'" placeholder="0901234567">
+                        <div class="invalid-feedback" th:errors="*{sdt}"></div>
                     </div>
                     <div class="col-6">
                         <label for="email" class="form-label fw-500">Email</label>
-                        <input type="email" id="email" th:field="*{email}" class="form-control">
+                        <input type="email" id="email" th:field="*{email}" class="form-control"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" placeholder="vidu@gmail.com">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
                     </div>
                 </div>
                 <div class="mb-4">

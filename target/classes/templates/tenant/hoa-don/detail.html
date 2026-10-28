@@ -71,16 +71,33 @@
 
                     <!-- Cho duyet -->
                     <div th:if="${hoaDon.trangThai.name() == 'CHO_DUYET'}"
-                         class="alert alert-info mb-0" style="border-radius:10px;font-size:.875rem;">
+                         class="alert alert-info mb-3" style="border-radius:10px;font-size:.875rem;">
                         <i class="bi bi-clock me-2"></i>
                         <strong>Đang chờ chủ trọ xác nhận</strong>
                         <p class="mb-0 mt-1 text-muted" style="font-size:.82rem;">
-                            Bạn đã gửi xác nhận thanh toán. Chủ trọ sẽ kiểm tra và xác nhận sớm nhất.
+                            Bạn đã gửi xác nhận thanh toán kèm ảnh biên lai. Chủ trọ sẽ kiểm tra và xác nhận sớm nhất.
                         </p>
+                    </div>
+
+                    <!-- Hien thi anh chuyen khoan neu co -->
+                    <div th:if="${hoaDon.anhChuyenKhoan != null}" class="mb-3 p-3 border rounded bg-light">
+                        <label class="form-label fw-bold text-muted mb-2">Ảnh biên lai đã tải lên:</label>
+                        <div>
+                            <img th:src="@{${hoaDon.anhChuyenKhoan.startsWith('/') ? hoaDon.anhChuyenKhoan : '/uploads/' + hoaDon.anhChuyenKhoan}}"
+                                 class="img-fluid rounded border" style="max-height:220px;" alt="Biên lai">
+                        </div>
                     </div>
 
                     <!-- Chua thanh toan -->
                     <div th:if="${hoaDon.trangThai.name() == 'CHUA_THANH_TOAN'}">
+                        <!-- Thong bao tu choi neu co -->
+                        <div th:if="${hoaDon.lyDoTuChoi != null and !hoaDon.lyDoTuChoi.isEmpty()}" class="alert alert-danger mb-3" style="border-radius:10px;font-size:.875rem;">
+                            <i class="bi bi-x-octagon-fill me-2"></i>
+                            <strong>Xác nhận thanh toán trước đó bị chủ trọ từ chối:</strong>
+                            <div class="mt-2 p-2 rounded bg-white text-dark border border-danger-subtle" th:text="${hoaDon.lyDoTuChoi}"></div>
+                            <div class="mt-1 text-muted" style="font-size:.8rem;">Vui lòng kiểm tra lại thông tin chuyển khoản và tải lên ảnh biên lai chính xác.</div>
+                        </div>
+
                         <div class="alert alert-warning mb-3" style="border-radius:10px;font-size:.875rem;">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             <strong>Chưa thanh toán</strong>
@@ -88,14 +105,18 @@
                                 Vui lòng chuyển khoản số tiền
                                 <strong th:text="${#numbers.formatDecimal(hoaDon.tongTien,0,'COMMA',0,'POINT')} + ' đ'"
                                         class="text-danger"></strong>
-                                theo thông tin chủ trọ cung cấp, sau đó nhấn nút bên dưới để báo đã chuyển khoản.
+                                theo thông tin chủ trọ cung cấp, sau đó tải ảnh biên lai và nhấn nút bên dưới để báo nộp tiền.
                             </p>
                         </div>
-                        <form th:action="@{/tenant/hoa-don/{id}/nop-tien(id=${hoaDon.id})}" method="post">
+                        <form th:action="@{/tenant/hoa-don/{id}/nop-tien(id=${hoaDon.id})}" method="post" enctype="multipart/form-data">
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button type="submit" class="btn btn-accent"
-                                    onclick="return confirm('Xác nhận bạn đã chuyển khoản thành công?')">
-                                <i class="bi bi-send-check me-2"></i>Báo đã chuyển khoản
+                            <div class="mb-3">
+                                <label for="file" class="form-label fw-bold">Ảnh biên lai chuyển khoản <span class="text-danger">*</span></label>
+                                <input type="file" class="form-control" id="file" name="file" accept="image/*" required>
+                                <div class="form-text">Hỗ trợ các định dạng: JPG, PNG, WEBP, GIF (Tối đa 5MB)</div>
+                            </div>
+                            <button type="submit" class="btn btn-accent">
+                                <i class="bi bi-send-check me-2"></i>Tải biên lai &amp; Báo đã chuyển khoản
                             </button>
                         </form>
                     </div>

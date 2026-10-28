@@ -65,9 +65,33 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
     @Override
     @Transactional(readOnly = true)
     public List<HoaDonResponse> findAll() {
-        return hoaDonRepository.findAll().stream().map(this::toResponse).toList();
+        return hoaDonRepository.findAllOrderByTrangThaiAndThangNam()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
+    // [THÊM MỚI] Lọc hóa đơn dành cho chủ trọ
+    @Transactional(readOnly = true)
+    public List<HoaDonResponse> findAllFiltered(
+            Integer toaNhaId,
+            Integer phongId,
+            String tuThang,
+            String denThang,
+            TrangThaiHoaDon trangThai) {
 
+        String cleanTuThang = (tuThang != null && !tuThang.isBlank()) ? tuThang.trim() : null;
+        String cleanDenThang = (denThang != null && !denThang.isBlank()) ? denThang.trim() : null;
+
+        return hoaDonRepository.findAllFiltered(
+                        toaNhaId,
+                        phongId,
+                        cleanTuThang,
+                        cleanDenThang,
+                        trangThai)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
     /**
      * Lay danh sach hoa don cua khach thue dang dang nhap.
      * Truy van: nguoi_dung_id -> khach_thue -> hop_dong -> hoa_don
@@ -91,7 +115,18 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         // Lay hoa don cua tat ca hop dong do
         return hopDongIds.stream()
                 .flatMap(hopDongId -> hoaDonRepository
-                        .findByHopDong_IdOrderByThangNamDesc(hopDongId).stream())
+                        .findByHopDong_Id(hopDongId).stream())
+                .sorted(
+                        java.util.Comparator
+                                .comparingInt((HoaDon hd) -> {
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHUA_THANH_TOAN) return 0;
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHO_DUYET) return 1;
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.DA_THANH_TOAN) return 2;
+                                    return 3;
+                                })
+                                .thenComparing(HoaDon::getThangNam,
+                                        java.util.Comparator.reverseOrder())
+                )
                 .map(this::toResponse)
                 .toList();
     }

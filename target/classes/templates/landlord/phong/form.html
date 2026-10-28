@@ -56,30 +56,15 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-500">Trạng thái</label>
-                    <!-- Form THÊM MỚI: cho phép chọn trạng thái ban đầu -->
-                    <div th:if="${id == null}">
-                        <select th:field="*{trangThai}" class="form-select">
-                            <option th:each="tt : ${trangThaiList}"
-                                    th:value="${tt.value}"
-                                    th:text="${tt.label}"></option>
-                        </select>
-                        <div class="form-text">Chỉ áp dụng khi tạo phòng mới.</div>
-                    </div>
-                    <!-- Form SỬA: chỉ hiển thị, không cho chỉnh tay -->
-                    <div th:if="${id != null}">
-                        <div class="form-control-plaintext d-flex align-items-center gap-2">
-                            <span class="badge fs-6 px-3 py-2"
-                                  th:classappend="${phongHienTai.trangThai.name() == 'TRONG'} ? 'bg-success' :
-                                                 (${phongHienTai.trangThai.name() == 'DANG_THUE'} ? 'bg-primary' : 'bg-secondary')"
-                                  th:text="${phongHienTai.trangThaiLabel}">Trạng thái</span>
-                        </div>
-                        <div class="form-text text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Trạng thái phòng do hệ thống tự quản lý qua luồng hợp đồng và không thể chỉnh tay.
-                        </div>
-                    </div>
+                <div class="mb-3" th:if="${id == null}">
+                    <label class="form-label fw-500">Trạng thái ban đầu</label>
+                    <select th:field="*{trangThai}" class="form-select">
+                        <option th:each="tt : ${trangThaiList}"
+                                th:if="${tt.name() != 'DANG_THUE'}"
+                                th:value="${tt.value}"
+                                th:text="${tt.label}"></option>
+                    </select>
+                    <div class="form-text">Phòng mới chỉ có thể là Trống hoặc Ngừng sử dụng (không chọn Đang thuê).</div>
                 </div>
 
                 <div class="mb-4">

@@ -40,9 +40,22 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label for="sdt" class="form-label fw-500">Số điện thoại</label>
                     <input type="text" id="sdt" th:field="*{sdt}" class="form-control" placeholder="0901234567">
+                </div>
+
+                <div class="mb-4">
+                    <label for="nguoiDungId" class="form-label fw-500">Tài khoản đăng nhập liên kết</label>
+                    <select th:field="*{nguoiDungId}" class="form-select" id="nguoiDungId">
+                        <option value="">-- Không liên kết / Chọn tài khoản --</option>
+                        <option th:each="nd : ${danhSachTaiKhoan}"
+                                th:value="${nd.id}"
+                                th:text="${nd.username} + ' (' + ${nd.hoTen} + ' - ' + ${nd.vaiTroLabel} + ')'"></option>
+                    </select>
+                    <div class="form-text text-muted" style="font-size:.78rem;">
+                        Khách thuê cần có tài khoản liên kết để đăng nhập cổng người thuê và nhận quyền Đại diện hợp đồng.
+                    </div>
                 </div>
 
                 <!-- Chi hien thi khi them moi -->

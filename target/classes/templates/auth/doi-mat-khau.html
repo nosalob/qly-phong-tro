@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><title>Đổi mật khẩu</title></head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <h1 class="page-title mb-0">Đổi mật khẩu</h1>
+    </div>
+    <div class="card-box" style="max-width:520px;">
+        <div class="card-box-hd">
+            <h5><i class="bi bi-key me-2" style="color:#6366f1"></i>Cập nhật mật khẩu tài khoản</h5>
+        </div>
+        <div class="p-4">
+            <!-- Thong bao bat buoc doi mat khau khi reset -->
+            <div th:if="${isRequired}" class="alert alert-warning mb-3 d-flex align-items-start gap-2" style="font-size:0.875rem;">
+                <i class="bi bi-exclamation-triangle-fill mt-1 text-warning" style="font-size:1.1rem;"></i>
+                <div>
+                    <strong>Yêu cầu đổi mật khẩu:</strong><br>
+                    Mật khẩu của bạn đã được reset về mặc định (<code>123456</code>). Vì lý do an toàn, bạn bắt buộc phải thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống!
+                </div>
+            </div>
+
+            <form th:action="@{/doi-mat-khau}" th:object="${request}" method="post" novalidate>
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="mb-3">
+                    <label for="matKhauCu" class="form-label fw-500">
+                        <span th:if="${isRequired}">Mật khẩu hiện tại (mặc định: 123456)</span>
+                        <span th:unless="${isRequired}">Mật khẩu cũ</span>
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="password" id="matKhauCu" th:field="*{matKhauCu}" class="form-control"
+                           th:classappend="${#fields.hasErrors('matKhauCu')} ? 'is-invalid'"
+                           th:placeholder="${isRequired} ? 'Nhập 123456' : 'Nhập mật khẩu hiện tại của bạn'"
+                           autocomplete="current-password">
+                    <div class="invalid-feedback" th:errors="*{matKhauCu}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="matKhauMoi" class="form-label fw-500">Mật khẩu mới <span class="text-danger">*</span></label>
+                    <input type="password" id="matKhauMoi" th:field="*{matKhauMoi}" class="form-control"
+                           th:classappend="${#fields.hasErrors('matKhauMoi')} ? 'is-invalid'"
+                           placeholder="Tối thiểu 8 ký tự" autocomplete="new-password">
+                    <div class="invalid-feedback" th:errors="*{matKhauMoi}"></div>
+                    <div class="form-text text-muted" style="font-size:.78rem;">Mật khẩu mới phải có ít nhất 8 ký tự.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="xacNhanMatKhau" class="form-label fw-500">Xác nhận mật khẩu mới <span class="text-danger">*</span></label>
+                    <input type="password" id="xacNhanMatKhau" th:field="*{xacNhanMatKhau}" class="form-control"
+                           th:classappend="${#fields.hasErrors('xacNhanMatKhau')} ? 'is-invalid'"
+                           placeholder="Nhập lại chính xác mật khẩu mới" autocomplete="new-password">
+                    <div class="invalid-feedback" th:errors="*{xacNhanMatKhau}"></div>
+                </div>
+
+                <button type="submit" class="btn btn-accent w-100">
+                    <i class="bi bi-shield-lock me-1"></i>Lưu mật khẩu mới
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

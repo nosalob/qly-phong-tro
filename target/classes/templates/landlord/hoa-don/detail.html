@@ -72,15 +72,49 @@
             <div class="card-box" th:if="${hoaDon.anhChuyenKhoan != null}">
                 <div class="card-box-hd"><h5>Ảnh chuyển khoản</h5></div>
                 <div class="p-3">
-                    <img th:src="@{'/uploads/' + ${hoaDon.anhChuyenKhoan}}" class="img-fluid rounded" style="max-height:200px;">
+                    <img th:src="@{${hoaDon.anhChuyenKhoan.startsWith('/') ? hoaDon.anhChuyenKhoan : '/uploads/' + hoaDon.anhChuyenKhoan}}" class="img-fluid rounded" style="max-height:200px;">
                 </div>
             </div>
 
             <!-- Actions -->
-            <div th:if="${hoaDon.trangThai != null and hoaDon.trangThai.name() == 'CHO_DUYET'}" class="mt-2">
+            <div th:if="${hoaDon.lyDoTuChoi != null and !hoaDon.lyDoTuChoi.isEmpty()}" class="alert alert-warning mt-3" style="font-size:.85rem;">
+                <div class="fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>Lý do từ chối thanh toán:</div>
+                <div th:text="${hoaDon.lyDoTuChoi}"></div>
+            </div>
+
+            <div th:if="${hoaDon.trangThai != null and hoaDon.trangThai.name() == 'CHO_DUYET'}" class="mt-2 d-flex flex-column gap-2">
                 <form th:action="@{/landlord/hoa-don/{id}/xac-nhan(id=${hoaDon.id})}" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                     <button type="submit" class="btn btn-accent w-100"><i class="bi bi-check-circle me-1"></i>Xác nhận đã nhận tiền</button>
+                </form>
+                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#modalTuChoi">
+                    <i class="bi bi-x-circle me-1"></i>Từ chối thanh toán
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Từ chối thanh toán -->
+    <div class="modal fade" id="modalTuChoi" tabindex="-1" aria-labelledby="modalTuChoiLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/landlord/hoa-don/{id}/tu-choi(id=${hoaDon.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTuChoiLabel"><i class="bi bi-x-circle text-danger me-2"></i>Từ chối xác nhận thanh toán</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted" style="font-size:.88rem;">Vui lòng nêu rõ lý do từ chối để người thuê biết và thực hiện lại chuyển khoản hoặc bổ sung minh chứng.</p>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lý do từ chối <span class="text-danger">*</span></label>
+                            <textarea name="lyDoTuChoi" class="form-control" rows="3" required placeholder="Ví dụ: Chưa nhận được giao dịch, sai số tiền, sai nội dung chuyển khoản..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-danger">Xác nhận từ chối</button>
+                    </div>
                 </form>
             </div>
         </div>

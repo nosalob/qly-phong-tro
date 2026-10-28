@@ -6,6 +6,15 @@
 <div th:fragment="content">
     <h1 class="page-title">Hóa đơn của tôi</h1>
 
+    <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show mb-3" style="border-radius:10px;">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${successMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show mb-3" style="border-radius:10px;">
+        <i class="bi bi-exclamation-circle me-2"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
     <div class="card-box">
         <div class="card-box-hd">
             <h5><i class="bi bi-receipt me-2" style="color:#6366f1"></i>Danh sách hóa đơn</h5>
