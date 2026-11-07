@@ -19,7 +19,7 @@ public class TenantHoaDonController {
     private final FileStorageService fileStorageService;
 
     public TenantHoaDonController(HoaDonService hoaDonService,
-                                  FileStorageService fileStorageService) {
+            FileStorageService fileStorageService) {
         this.hoaDonService = hoaDonService;
         this.fileStorageService = fileStorageService;
     }
@@ -34,9 +34,9 @@ public class TenantHoaDonController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Integer id,
-                         @AuthenticationPrincipal CustomUserDetails userDetails,
-                         Model model) {
+    public String detail(@PathVariable(name = "id") Integer id,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Model model) {
         model.addAttribute("hoaDon", hoaDonService.findByIdOfNguoiDung(id, userDetails.getId()));
         model.addAttribute("pageTitle", "Chi tiết Hóa đơn");
         model.addAttribute("pageContent", "tenant/hoa-don/detail");
@@ -44,16 +44,18 @@ public class TenantHoaDonController {
     }
 
     /**
-     * Khach thue nop tien kem anh bien lai chuyen khoan -> chuyen trang thai sang CHO_DUYET.
+     * Khach thue nop tien kem anh bien lai chuyen khoan -> chuyen trang thai sang
+     * CHO_DUYET.
      * Chu tro se xac nhan hoac tu choi o trang landlord/hoa-don/{id}.
      */
     @PostMapping("/{id}/nop-tien")
-    public String nopTien(@PathVariable Integer id,
-                          @RequestParam(value = "file", required = false) MultipartFile file,
-                          @AuthenticationPrincipal CustomUserDetails userDetails,
-                          RedirectAttributes redirectAttributes) {
+    public String nopTien(@PathVariable(name = "id") Integer id,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            RedirectAttributes redirectAttributes) {
         if (file == null || file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMsg", "Vui lòng chọn ảnh biên lai chuyển khoản trước khi bấm nộp tiền.");
+            redirectAttributes.addFlashAttribute("errorMsg",
+                    "Vui lòng chọn ảnh biên lai chuyển khoản trước khi bấm nộp tiền.");
             return "redirect:/tenant/hoa-don/" + id;
         }
 

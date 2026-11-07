@@ -24,6 +24,7 @@ public class HopDongResponse {
     private TrangThaiCoc trangThaiCoc;
     private String trangThaiCocLabel;
     private LocalDateTime ngayTao;
+    private boolean sapHetHan;
     private List<KhachThueResponse> danhSachKhach;
     private KhachThueResponse daiDien;
 

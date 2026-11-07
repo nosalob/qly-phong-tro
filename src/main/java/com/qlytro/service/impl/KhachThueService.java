@@ -13,6 +13,8 @@ import com.qlytro.service.base.BaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @Transactional
@@ -23,8 +25,8 @@ public class KhachThueService implements BaseService<KhachThueResponse, Integer>
     private final com.qlytro.repository.HopDongKhachThueRepository hdktRepository;
 
     public KhachThueService(KhachThueRepository khachThueRepository,
-                             NguoiDungRepository nguoiDungRepository,
-                             com.qlytro.repository.HopDongKhachThueRepository hdktRepository) {
+            NguoiDungRepository nguoiDungRepository,
+            com.qlytro.repository.HopDongKhachThueRepository hdktRepository) {
         this.khachThueRepository = khachThueRepository;
         this.nguoiDungRepository = nguoiDungRepository;
         this.hdktRepository = hdktRepository;
@@ -106,5 +108,10 @@ public class KhachThueService implements BaseService<KhachThueResponse, Integer>
             r.setUsername(entity.getNguoiDung().getUsername());
         }
         return r;
+    }
+
+    public Page<KhachThueResponse> search(String keyword, Pageable pageable) {
+        return khachThueRepository.search(keyword, pageable)
+                .map(this::toResponse);
     }
 }

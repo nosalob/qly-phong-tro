@@ -37,7 +37,7 @@ public class SuCoController {
     }
 
     @GetMapping("/landlord/su-co/{id}")
-    public String landlordDetail(@PathVariable Integer id, Model model) {
+    public String landlordDetail(@PathVariable(name = "id") Integer id, Model model) {
         model.addAttribute("suCo", suCoService.findById(id));
         model.addAttribute("nguyenNhanList", NguyenNhanSuCo.values());
         model.addAttribute("pageTitle", "Chi tiết Sự cố");
@@ -46,7 +46,7 @@ public class SuCoController {
     }
 
     @GetMapping("/landlord/su-co/them")
-    public String landlordThemForm(@RequestParam(required = false) Integer phongId, Model model) {
+    public String landlordThemForm(@RequestParam(name = "phongId", required = false) Integer phongId, Model model) {
         SuCoRequest req = new SuCoRequest();
         req.setPhongId(phongId);
         List<ThietBi> danhSachThietBi = (phongId == null)
@@ -81,8 +81,8 @@ public class SuCoController {
     }
 
     @PostMapping("/landlord/su-co/{id}/cap-nhat")
-    public String capNhatTrangThai(@PathVariable Integer id,
-                                   @RequestParam Integer trangThai,
+    public String capNhatTrangThai(@PathVariable(name = "id") Integer id,
+                                   @RequestParam(name = "trangThai") Integer trangThai,
                                    RedirectAttributes redirectAttributes) {
         suCoService.capNhatTrangThai(id, trangThai);
         redirectAttributes.addFlashAttribute("successMsg", "Cập nhật trạng thái sự cố thành công!");
@@ -90,8 +90,8 @@ public class SuCoController {
     }
 
     @PostMapping("/landlord/su-co/{id}/hoan-thanh")
-    public String hoanThanh(@PathVariable Integer id,
-                             @RequestParam Integer nguyenNhan,
+    public String hoanThanh(@PathVariable(name = "id") Integer id,
+                             @RequestParam(name = "nguyenNhan") Integer nguyenNhan,
                              RedirectAttributes redirectAttributes) {
         suCoService.hoanThanh(id, nguyenNhan);
         redirectAttributes.addFlashAttribute("successMsg", "Hoàn thành sự cố!");

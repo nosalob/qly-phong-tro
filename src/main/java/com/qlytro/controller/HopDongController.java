@@ -1,11 +1,15 @@
 package com.qlytro.controller;
 
 import com.qlytro.dto.request.HopDongRequest;
+import com.qlytro.dto.response.HopDongResponse;
 import com.qlytro.entity.enums.TrangThaiHopDong;
 import com.qlytro.service.impl.HopDongService;
 import com.qlytro.service.impl.KhachThueService;
 import com.qlytro.service.impl.PhongService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -29,17 +33,34 @@ public class HopDongController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute("danhSach", hopDongService.findAll());
-        model.addAttribute("pageTitle", "Quản lý Hợp đồng");
+    public String list(
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "filter", required = false, defaultValue = "ALL") String filter,
+            @RequestParam(name = "sapHetHan", required = false) Boolean sapHetHan,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            Model model
+    ) {
+        // Tuong thich nguoc neu duoc goi voi ?sapHetHan=true
+        if (Boolean.TRUE.equals(sapHetHan)) {
+            filter = "SAP_HET_HAN";
+        }
 
-        // SỬA 1: Trả về layout/base
+        int pageSize = 10;
+        Pageable pageable = PageRequest.of(Math.max(0, page), pageSize);
+        Page<HopDongResponse> pageResult = hopDongService.findHopDongPage(keyword, filter, pageable);
+
+        model.addAttribute("pageResult", pageResult);
+        model.addAttribute("danhSach", pageResult.getContent());
+        model.addAttribute("keyword", keyword != null ? keyword.trim() : "");
+        model.addAttribute("filter", (filter != null && !filter.isBlank()) ? filter.trim().toUpperCase() : "ALL");
+        model.addAttribute("sapHetHan", "SAP_HET_HAN".equalsIgnoreCase(filter));
+        model.addAttribute("pageTitle", "Quản lý Hợp đồng");
         model.addAttribute("pageContent", "landlord/hop-dong/list");
         return "layout/base";
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Integer id, Model model) {
+    public String detail(@PathVariable(name = "id") Integer id, Model model) {
         model.addAttribute("hopDong", hopDongService.findById(id));
         model.addAttribute("pageTitle", "Chi tiết Hợp đồng");
 
@@ -88,8 +109,8 @@ public class HopDongController {
     }
 
     @PostMapping("/{id}/ket-thuc")
-    public String ketThuc(@PathVariable Integer id,
-                          @RequestParam(defaultValue = "1") Integer loai,
+    public String ketThuc(@PathVariable(name = "id") Integer id,
+                          @RequestParam(name = "loai", defaultValue = "1") Integer loai,
                           RedirectAttributes redirectAttributes) {
         TrangThaiHopDong trangThai = loai == 2
                 ? TrangThaiHopDong.KET_THUC_BAT_THUONG
@@ -100,7 +121,7 @@ public class HopDongController {
     }
 
     @PostMapping("/{id}/them-nguoi-o")
-    public String themNguoiOCung(@PathVariable Integer id,
+    public String themNguoiOCung(@PathVariable(name = "id") Integer id,
                                  @ModelAttribute com.qlytro.dto.request.KhachThueRequest khachRequest,
                                  RedirectAttributes redirectAttributes) {
         try {
@@ -113,8 +134,8 @@ public class HopDongController {
     }
 
     @PostMapping("/{id}/doi-dai-dien")
-    public String doiDaiDien(@PathVariable Integer id,
-                             @RequestParam Integer khachThueId,
+    public String doiDaiDien(@PathVariable(name = "id") Integer id,
+                             @RequestParam(name = "khachThueId") Integer khachThueId,
                              RedirectAttributes redirectAttributes) {
         try {
             hopDongService.doiNguoiDaiDien(id, khachThueId);
@@ -126,8 +147,8 @@ public class HopDongController {
     }
 
     @PostMapping("/{id}/nguoi-roi-di")
-    public String nguoiRoiDi(@PathVariable Integer id,
-                             @RequestParam Integer khachThueId,
+    public String nguoiRoiDi(@PathVariable(name = "id") Integer id,
+                             @RequestParam(name = "khachThueId") Integer khachThueId,
                              RedirectAttributes redirectAttributes) {
         try {
             hopDongService.nguoiRoiDi(id, khachThueId);

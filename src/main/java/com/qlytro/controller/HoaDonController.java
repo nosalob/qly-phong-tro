@@ -1,12 +1,28 @@
 package com.qlytro.controller;
 
+import com.qlytro.dto.request.NhacThanhToanRequest;
+import com.qlytro.dto.response.HoaDonQuaHanResponse;
+import com.qlytro.dto.response.HoaDonResponse;
+import com.qlytro.dto.response.NhacThanhToanResponse;
+import com.qlytro.entity.enums.HinhThucNhac;
 import com.qlytro.entity.enums.TrangThaiHoaDon;
+import com.qlytro.security.CustomUserDetails;
 import com.qlytro.service.impl.HoaDonService;
 import com.qlytro.service.impl.HopDongService;
+import com.qlytro.service.impl.NhacThanhToanService;
+import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 public class HoaDonController {
@@ -15,26 +31,48 @@ public class HoaDonController {
     private final HopDongService hopDongService;
     private final com.qlytro.service.impl.ToaNhaService toaNhaService;
     private final com.qlytro.service.impl.PhongService phongService;
+    private final NhacThanhToanService nhacThanhToanService;
 
     public HoaDonController(
             HoaDonService hoaDonService,
             HopDongService hopDongService,
             com.qlytro.service.impl.ToaNhaService toaNhaService,
-            com.qlytro.service.impl.PhongService phongService) {
+            com.qlytro.service.impl.PhongService phongService,
+            NhacThanhToanService nhacThanhToanService) {
         this.hoaDonService = hoaDonService;
         this.hopDongService = hopDongService;
         this.toaNhaService = toaNhaService;
         this.phongService = phongService;
+        this.nhacThanhToanService = nhacThanhToanService;
     }
 
     // ===== LANDLORD =====
+    @GetMapping("/landlord/hoa-don/qua-han")
+    public String landlordQuaHan(
+            @RequestParam(name = "toaNhaId", required = false) Integer toaNhaId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            Model model) {
+
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size));
+        Page<HoaDonQuaHanResponse> pageResult = hoaDonService.findHoaDonQuaHanPage(toaNhaId, pageable);
+
+        model.addAttribute("pageResult", pageResult);
+        model.addAttribute("danhSachToaNha", toaNhaService.findAll());
+        model.addAttribute("toaNhaId", toaNhaId);
+        model.addAttribute("pageTitle", "Hóa đơn Quá hạn");
+        model.addAttribute("pageContent", "landlord/hoa-don/qua-han");
+
+        return "layout/base";
+    }
+
     @GetMapping("/landlord/hoa-don")
     public String landlordList(
-            @RequestParam(required = false) Integer toaNhaId,
-            @RequestParam(required = false) Integer phongId,
-            @RequestParam(required = false) String tuThang,
-            @RequestParam(required = false) String denThang,
-            @RequestParam(required = false) String trangThai,
+            @RequestParam(name = "toaNhaId", required = false) Integer toaNhaId,
+            @RequestParam(name = "phongId", required = false) Integer phongId,
+            @RequestParam(name = "tuThang", required = false) String tuThang,
+            @RequestParam(name = "denThang", required = false) String denThang,
+            @RequestParam(name = "trangThai", required = false) String trangThai,
             Model model) {
 
         if (tuThang != null && tuThang.isBlank()) {
@@ -80,18 +118,53 @@ public class HoaDonController {
     }
 
     @GetMapping("/landlord/hoa-don/{id}")
-    public String landlordDetail(@PathVariable Integer id, Model model) {
-        model.addAttribute("hoaDon", hoaDonService.findById(id));
+    public String landlordDetail(@PathVariable(name = "id") Integer id, Model model) {
+        HoaDonResponse hoaDon = hoaDonService.findById(id);
+        List<NhacThanhToanResponse> lichSuNhac = nhacThanhToanService.findByHoaDonId(id);
+
+        model.addAttribute("hoaDon", hoaDon);
+        model.addAttribute("lichSuNhac", lichSuNhac);
+        model.addAttribute("nhacRequest", new NhacThanhToanRequest());
+        model.addAttribute("hinhThucList", HinhThucNhac.values());
         model.addAttribute("pageTitle", "Chi tiết Hóa đơn");
         model.addAttribute("pageContent", "landlord/hoa-don/detail");
         return "layout/base";
     }
 
+    @PostMapping("/landlord/hoa-don/{id}/nhac-thanh-toan")
+    public String ghiNhanNhacThanhToan(
+            @PathVariable(name = "id") Integer id,
+            @Valid @ModelAttribute("nhacRequest") NhacThanhToanRequest request,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMsg",
+                    bindingResult.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/landlord/hoa-don/" + id;
+        }
+
+        try {
+            nhacThanhToanService.ghiNhanNhacThanhToan(id, request, userDetails.getId());
+            redirectAttributes.addFlashAttribute(
+                    "successMsg",
+                    "Đã ghi nhận lịch sử nhắc thanh toán thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMsg",
+                    "Lỗi ghi nhận nhắc nhở: " + e.getMessage());
+        }
+
+        return "redirect:/landlord/hoa-don/" + id;
+    }
+
     @PostMapping("/landlord/hoa-don/tao")
     public String taoHoaDon(
-            @RequestParam(required = false) Integer hopDongId,
-            @RequestParam(required = false) Integer phongId,
-            @RequestParam String thangNam,
+            @RequestParam(name = "hopDongId", required = false) Integer hopDongId,
+            @RequestParam(name = "phongId", required = false) Integer phongId,
+            @RequestParam(name = "thangNam") String thangNam,
             RedirectAttributes redirectAttributes) {
         try {
             // Nếu không có hopDongId nhưng có phongId thì tìm hợp đồng đang hiệu lực
@@ -124,6 +197,11 @@ public class HoaDonController {
 
             return "redirect:/landlord/hoa-don/" + hd.getId();
 
+        } catch (DataIntegrityViolationException e) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMsg",
+                    "Hóa đơn tháng " + thangNam + " đã được tạo bởi tiến trình khác.");
+            return "redirect:/landlord/hoa-don";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute(
                     "errorMsg",
@@ -137,7 +215,7 @@ public class HoaDonController {
 
     @PostMapping("/landlord/hoa-don/{id}/xac-nhan")
     public String xacNhanThanhToan(
-            @PathVariable Integer id,
+            @PathVariable(name = "id") Integer id,
             RedirectAttributes redirectAttributes) {
 
         hoaDonService.xacNhanThanhToan(id);
@@ -149,8 +227,8 @@ public class HoaDonController {
 
     @PostMapping("/landlord/hoa-don/{id}/tu-choi")
     public String tuChoiThanhToan(
-            @PathVariable Integer id,
-            @RequestParam(required = false) String lyDoTuChoi,
+            @PathVariable(name = "id") Integer id,
+            @RequestParam(name = "lyDoTuChoi", required = false) String lyDoTuChoi,
             RedirectAttributes redirectAttributes) {
 
         hoaDonService.tuChoiThanhToan(id, lyDoTuChoi);
@@ -163,7 +241,7 @@ public class HoaDonController {
 
     @PostMapping("/landlord/hoa-don/{id}/xoa")
     public String xoa(
-            @PathVariable Integer id,
+            @PathVariable(name = "id") Integer id,
             RedirectAttributes redirectAttributes) {
 
         hoaDonService.deleteById(id);

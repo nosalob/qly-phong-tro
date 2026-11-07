@@ -1,69 +1,190 @@
 <!DOCTYPE html>
-<!-- SỬA 1: Bỏ th:replace="~{layout/base :: html-body}" -->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><title>Khách thuê</title></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title>Khách thuê</title>
+</head>
+
 <body>
 
-<!-- SỬA 2: Đổi sang <div th:fragment="content"> -->
-<div th:fragment="content">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="page-title mb-0">Danh sách Khách thuê</h1>
-        <a th:href="@{/landlord/khach-thue/them}" class="btn btn-accent">
-            <i class="bi bi-person-plus me-1"></i>Thêm khách thuê
-        </a>
+    <div th:fragment="content">
+
+        <!-- Tiêu đề -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 class="page-title mb-0">Danh sách Khách thuê</h1>
+
+            <a th:href="@{/landlord/khach-thue/them}" class="btn btn-accent">
+                <i class="bi bi-person-plus me-1"></i>Thêm khách thuê
+            </a>
+        </div>
+
+        <div class="card-box">
+
+            <!-- Header -->
+            <div class="card-box-hd">
+                <h5>
+                    <i class="bi bi-people me-2" style="color:#6366f1"></i>
+                    Khách thuê
+                </h5>
+
+                <small class="text-muted" th:text="${pageData.totalElements} + ' khách'">
+                </small>
+            </div>
+
+            <!-- Tìm kiếm -->
+            <div class="p-3 pb-0">
+                <form th:action="@{/landlord/khach-thue}" method="get" class="d-flex gap-2 align-items-center"
+                    style="width:50%; min-width:280px;">
+
+                    <input type="text" name="keyword" class="form-control" placeholder="Tìm theo họ tên hoặc CCCD..."
+                        th:value="${keyword}">
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                        Tìm
+                    </button>
+
+                    <a th:if="${keyword != null and !keyword.isEmpty()}" th:href="@{/landlord/khach-thue}"
+                        class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </form>
+            </div>
+
+            <!-- Không có dữ liệu -->
+            <div th:if="${danhSach.isEmpty()}" class="p-5 text-center text-muted">
+
+                <i class="bi bi-people" style="font-size:3rem;opacity:.3"></i>
+
+                <p class="mt-2" th:if="${keyword == null or keyword.isEmpty()}">
+                    Chưa có khách thuê nào.
+                </p>
+
+                <p class="mt-2" th:if="${keyword != null and !keyword.isEmpty()}">
+                    Không tìm thấy khách thuê phù hợp.
+                </p>
+            </div>
+
+            <!-- Bảng danh sách -->
+            <div class="table-responsive" th:if="${!danhSach.isEmpty()}">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Họ tên</th>
+                            <th>CCCD</th>
+                            <th>Số điện thoại</th>
+                            <th>Ngày sinh</th>
+                            <th>Tài khoản</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="item, st : ${danhSach}">
+
+                            <td class="text-muted" th:text="${pageData.number * pageData.size + st.count}">
+                            </td>
+
+                            <td>
+                                <strong th:text="${item.hoTen}"></strong>
+                            </td>
+
+                            <td>
+                                <code th:text="${item.cccd}"></code>
+                            </td>
+
+                            <td th:text="${item.sdt ?: '—'}"></td>
+
+                            <td th:text="${item.ngaySinh != null
+                        ? #temporals.format(item.ngaySinh,'dd/MM/yyyy')
+                        : '—'}">
+                            </td>
+
+                            <td>
+                                <span th:if="${item.username != null}" class="badge bg-active"
+                                    th:text="${item.username}">
+                                </span>
+
+                                <span th:if="${item.username == null}" class="text-muted" style="font-size:.8rem;">
+                                    Chưa có
+                                </span>
+                            </td>
+
+                            <td>
+                                <div class="d-flex gap-1">
+
+                                    <a th:href="@{/landlord/khach-thue/sua/{id}(id=${item.id})}"
+                                        class="btn btn-sm btn-outline-primary" style="border-radius:7px;">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <form th:action="@{/landlord/khach-thue/xoa/{id}(id=${item.id})}" method="post"
+                                        onsubmit="return confirm('Xác nhận xóa khách thuê này?')">
+
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            style="border-radius:7px;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            <div th:if="${pageData.totalPages > 1}" class="d-flex justify-content-between align-items-center p-3">
+
+                <small class="text-muted">
+                    Trang
+                    <strong th:text="${pageData.number + 1}"></strong>
+                    /
+                    <strong th:text="${pageData.totalPages}"></strong>
+                </small>
+
+                <nav>
+                    <ul class="pagination mb-0">
+
+                        <!-- Trang trước -->
+                        <li class="page-item" th:classappend="${!pageData.hasPrevious()} ? 'disabled'">
+
+                            <a class="page-link"
+                                th:href="@{/landlord/khach-thue(keyword=${keyword},page=${pageData.number - 1})}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+
+                        <!-- Các trang -->
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, pageData.totalPages - 1)}"
+                            th:classappend="${i == pageData.number} ? 'active'">
+
+                            <a class="page-link" th:text="${i + 1}"
+                                th:href="@{/landlord/khach-thue(keyword=${keyword},page=${i})}">
+                            </a>
+                        </li>
+
+                        <!-- Trang sau -->
+                        <li class="page-item" th:classappend="${!pageData.hasNext()} ? 'disabled'">
+
+                            <a class="page-link"
+                                th:href="@{/landlord/khach-thue(keyword=${keyword},page=${pageData.number + 1})}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
     </div>
-    <div class="card-box">
-        <div class="card-box-hd">
-            <h5><i class="bi bi-people me-2" style="color:#6366f1"></i>Khách thuê</h5>
-            <small class="text-muted" th:text="${danhSach.size()} + ' khách'"></small>
-        </div>
-        <div th:if="${danhSach.isEmpty()}" class="p-5 text-center text-muted">
-            <i class="bi bi-people" style="font-size:3rem;opacity:.3"></i>
-            <p class="mt-2">Chưa có khách thuê nào.</p>
-        </div>
-        <div class="table-responsive" th:if="${!danhSach.isEmpty()}">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Họ tên</th>
-                    <th>CCCD</th>
-                    <th>Số điện thoại</th>
-                    <th>Ngày sinh</th>
-                    <th>Tài khoản</th>
-                    <th>Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="item, st : ${danhSach}">
-                    <td th:text="${st.count}" class="text-muted"></td>
-                    <td><strong th:text="${item.hoTen}"></strong></td>
-                    <td><code th:text="${item.cccd}"></code></td>
-                    <td th:text="${item.sdt ?: '—'}"></td>
-                    <td th:text="${item.ngaySinh != null ? #temporals.format(item.ngaySinh,'dd/MM/yyyy') : '—'}"></td>
-                    <td>
-                            <span th:if="${item.username != null}"
-                                  class="badge bg-active" th:text="${item.username}"></span>
-                        <span th:if="${item.username == null}" class="text-muted" style="font-size:.8rem;">Chưa có</span>
-                    </td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <a th:href="@{/landlord/khach-thue/sua/{id}(id=${item.id})}"
-                               class="btn btn-sm btn-outline-primary" style="border-radius:7px;"><i class="bi bi-pencil"></i></a>
-                            <form th:action="@{/landlord/khach-thue/xoa/{id}(id=${item.id})}" method="post"
-                                  onsubmit="return confirm('Xác nhận xóa khách thuê này?')">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:7px;"><i class="bi bi-trash"></i></button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <!-- SỬA 3: Đóng thẻ </div> -->
-</div>
+
 </body>
+
 </html>

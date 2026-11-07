@@ -13,6 +13,9 @@ public class HoaDonResponse {
     private String soPhong;
     private String tenToaNha;
     private String tenKhachDaiDien;
+    private String sdtKhachDaiDien;
+    private boolean coSnapshotDaiDien;
+    private String ghiChuDaiDien;
     private String thangNam;
     private BigDecimal tongTien;
     private TrangThaiHoaDon trangThai;
@@ -21,5 +24,9 @@ public class HoaDonResponse {
     private LocalDateTime ngayTao;
     private LocalDateTime ngayThanhToan;
     private String lyDoTuChoi;
+    private java.time.LocalDate hanThanhToan;
+    private boolean quaHan;
+    private long soNgayQuaHan;
     private List<HoaDonChiTietResponse> danhSachChiTiet;
+    private List<NhacThanhToanResponse> danhSachNhac;
 }

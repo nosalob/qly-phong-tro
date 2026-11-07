@@ -1,10 +1,8 @@
 package com.qlytro.controller;
 
 import com.qlytro.entity.HopDong;
-import com.qlytro.entity.HopDongKhachThue;
 import com.qlytro.entity.KhachThue;
 import com.qlytro.repository.HoaDonRepository;
-import com.qlytro.repository.HopDongKhachThueRepository;
 import com.qlytro.repository.HopDongRepository;
 import com.qlytro.repository.KhachThueRepository;
 import com.qlytro.repository.SuCoRepository;
@@ -16,7 +14,6 @@ import org.springframework.ui.Model;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import java.util.List;
 
 @Controller
 @RequestMapping("/tenant")
@@ -26,20 +23,17 @@ public class TenantController {
     private final HopDongRepository hopDongRepository;
     private final HoaDonRepository hoaDonRepository;
     private final SuCoRepository suCoRepository;
-    private final HopDongKhachThueRepository hdktRepository;
     private final com.qlytro.service.impl.HopDongService hopDongService;
 
     public TenantController(KhachThueRepository khachThueRepository,
                             HopDongRepository hopDongRepository,
                             HoaDonRepository hoaDonRepository,
                             SuCoRepository suCoRepository,
-                            HopDongKhachThueRepository hdktRepository,
                             com.qlytro.service.impl.HopDongService hopDongService) {
         this.khachThueRepository = khachThueRepository;
         this.hopDongRepository = hopDongRepository;
         this.hoaDonRepository = hoaDonRepository;
         this.suCoRepository = suCoRepository;
-        this.hdktRepository = hdktRepository;
         this.hopDongService = hopDongService;
     }
 

@@ -9,12 +9,18 @@ import com.qlytro.exception.BusinessException;
 import com.qlytro.exception.ResourceNotFoundException;
 import com.qlytro.repository.*;
 import com.qlytro.service.base.BaseService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import com.qlytro.service.strategy.TinhTienContext;
 import com.qlytro.service.strategy.TinhTienDienStrategy;
 import com.qlytro.service.strategy.TinhTienNuocStrategy;
@@ -68,6 +74,138 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
     @Transactional(readOnly = true)
     public List<HopDongResponse> findAll() {
         return hopDongRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * Tim kiem, loc va phan trang hop dong.
+     * Sap xep: ACTIVE -> KET_THUC_BINH_THUONG -> KET_THUC_BAT_THUONG, ngayBatDau DESC.
+     * Batch fetch phong, toa nha va dai dien de tranh N+1.
+     */
+    @Transactional(readOnly = true)
+    public Page<HopDongResponse> findHopDongPage(String keyword, String filter, Pageable pageable) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        String fil = (filter != null && !filter.isBlank()) ? filter.trim().toUpperCase() : "ALL";
+        LocalDate hanChot = LocalDate.now().plusDays(30);
+
+        Page<HopDong> hdPage = hopDongRepository.findHopDongFilterAndPage(fil, hanChot, kw, pageable);
+        if (hdPage.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<HopDong> content = hdPage.getContent();
+        List<Integer> hdIds = content.stream().map(HopDong::getId).toList();
+
+        // Batch fetch nguoi dai dien de khong bi N+1
+        List<HopDongKhachThue> daiDienList = hdktRepository.findDaiDienByHopDongIds(hdIds);
+        Map<Integer, KhachThueResponse> daiDienMap = daiDienList.stream()
+                .filter(h -> h.getHopDong() != null && h.getKhachThue() != null)
+                .collect(Collectors.toMap(
+                        h -> h.getHopDong().getId(),
+                        h -> {
+                            KhachThueResponse kt = new KhachThueResponse();
+                            kt.setId(h.getKhachThue().getId());
+                            kt.setHoTen(h.getKhachThue().getHoTen());
+                            kt.setCccd(h.getKhachThue().getCccd());
+                            kt.setSdt(h.getKhachThue().getSdt());
+                            kt.setLaDaiDien(true);
+                            kt.setDangO(h.getDangO());
+                            return kt;
+                        },
+                        (k1, k2) -> k1
+                ));
+
+        List<HopDongResponse> responseList = content.stream().map(hd -> {
+            HopDongResponse r = new HopDongResponse();
+            r.setId(hd.getId());
+            if (hd.getPhong() != null) {
+                r.setPhongId(hd.getPhong().getId());
+                r.setSoPhong(hd.getPhong().getSoPhong());
+                if (hd.getPhong().getToaNha() != null) {
+                    r.setTenToaNha(hd.getPhong().getToaNha().getTenToaNha());
+                }
+            }
+            r.setNgayBatDau(hd.getNgayBatDau());
+            r.setNgayKetThuc(hd.getNgayKetThuc());
+            r.setTienThue(hd.getTienThue());
+            r.setTienCoc(hd.getTienCoc());
+            r.setTienCocConLai(hd.getTienCocConLai());
+            r.setTrangThai(hd.getTrangThai());
+            r.setTrangThaiLabel(hd.getTrangThai() != null ? hd.getTrangThai().getLabel() : "");
+            r.setTrangThaiCoc(hd.getTrangThaiCoc());
+            r.setTrangThaiCocLabel(hd.getTrangThaiCoc() != null ? hd.getTrangThaiCoc().getLabel() : "");
+            r.setNgayTao(hd.getNgayTao());
+
+            KhachThueResponse dd = daiDienMap.get(hd.getId());
+            r.setDaiDien(dd);
+            r.setDanhSachKhach(dd != null ? List.of(dd) : List.of());
+
+            boolean sapHetHan = hd.getTrangThai() == TrangThaiHopDong.ACTIVE
+                    && hd.getNgayKetThuc() != null
+                    && !hd.getNgayKetThuc().isAfter(hanChot);
+            r.setSapHetHan(sapHetHan);
+
+            return r;
+        }).toList();
+
+        return new PageImpl<>(responseList, pageable, hdPage.getTotalElements());
+    }
+
+    /**
+     * Lay danh sach hop dong ACTIVE va sap het han trong vong 30 ngay.
+     * Batch fetch phong, toa nha va dai dien de khong bi N+1.
+     */
+    @Transactional(readOnly = true)
+    public List<HopDongResponse> findSapHetHan() {
+        LocalDate hanChot = LocalDate.now().plusDays(30);
+        List<HopDong> list = hopDongRepository.findSapHetHan(TrangThaiHopDong.ACTIVE, hanChot);
+        if (list.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> hdIds = list.stream().map(HopDong::getId).toList();
+        List<HopDongKhachThue> daiDienList = hdktRepository.findDaiDienByHopDongIds(hdIds);
+        Map<Integer, KhachThueResponse> daiDienMap = daiDienList.stream()
+                .filter(h -> h.getHopDong() != null && h.getKhachThue() != null)
+                .collect(Collectors.toMap(
+                        h -> h.getHopDong().getId(),
+                        h -> {
+                            KhachThueResponse kt = new KhachThueResponse();
+                            kt.setId(h.getKhachThue().getId());
+                            kt.setHoTen(h.getKhachThue().getHoTen());
+                            kt.setCccd(h.getKhachThue().getCccd());
+                            kt.setSdt(h.getKhachThue().getSdt());
+                            kt.setLaDaiDien(true);
+                            kt.setDangO(h.getDangO());
+                            return kt;
+                        },
+                        (k1, k2) -> k1
+                ));
+
+        return list.stream().map(hd -> {
+            HopDongResponse r = new HopDongResponse();
+            r.setId(hd.getId());
+            if (hd.getPhong() != null) {
+                r.setPhongId(hd.getPhong().getId());
+                r.setSoPhong(hd.getPhong().getSoPhong());
+                if (hd.getPhong().getToaNha() != null) {
+                    r.setTenToaNha(hd.getPhong().getToaNha().getTenToaNha());
+                }
+            }
+            r.setNgayBatDau(hd.getNgayBatDau());
+            r.setNgayKetThuc(hd.getNgayKetThuc());
+            r.setTienThue(hd.getTienThue());
+            r.setTienCoc(hd.getTienCoc());
+            r.setTienCocConLai(hd.getTienCocConLai());
+            r.setTrangThai(hd.getTrangThai());
+            r.setTrangThaiLabel(hd.getTrangThai() != null ? hd.getTrangThai().getLabel() : "");
+            r.setTrangThaiCoc(hd.getTrangThaiCoc());
+            r.setTrangThaiCocLabel(hd.getTrangThaiCoc() != null ? hd.getTrangThaiCoc().getLabel() : "");
+            r.setNgayTao(hd.getNgayTao());
+            KhachThueResponse dd = daiDienMap.get(hd.getId());
+            r.setDaiDien(dd);
+            r.setDanhSachKhach(dd != null ? List.of(dd) : List.of());
+            return r;
+        }).toList();
     }
 
     /**
@@ -384,7 +522,8 @@ public class HopDongService implements BaseService<HopDongResponse, Integer> {
         r.setNgayTao(entity.getNgayTao());
 
         // Load danh sach khach thue
-        List<HopDongKhachThue> danhSachHdkt = hdktRepository.findByHopDong_Id(entity.getId());
+        List<HopDongKhachThue> danhSachHdkt =
+                hdktRepository.findByHopDongIdWithKhachThue(entity.getId());
         List<KhachThueResponse> danhSachKhach = danhSachHdkt.stream()
                 .map(hdkt -> {
                     KhachThueResponse kt = new KhachThueResponse();

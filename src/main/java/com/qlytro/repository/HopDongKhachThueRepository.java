@@ -47,5 +47,24 @@ public interface HopDongKhachThueRepository extends JpaRepository<HopDongKhachTh
      */
     @Query("SELECT DISTINCT h.khachThue FROM HopDongKhachThue h WHERE h.khachThue.nguoiDung.id = :nguoiDungId")
     Optional<KhachThue> findKhachThueByNguoiDungId(@Param("nguoiDungId") Integer nguoiDungId);
+
+    @Query("""
+            SELECT hdkt FROM HopDongKhachThue hdkt
+            JOIN FETCH hdkt.khachThue kt
+            WHERE hdkt.hopDong.id IN :hopDongIds
+              AND hdkt.laDaiDien = true
+            """)
+    List<HopDongKhachThue> findDaiDienByHopDongIds(@Param("hopDongIds") List<Integer> hopDongIds);
+
+    @Query("""
+        SELECT COUNT(DISTINCT hdkt.khachThue.id)
+        FROM HopDongKhachThue hdkt
+        JOIN hdkt.hopDong hd
+        JOIN hd.phong p
+        WHERE hdkt.dangO = true
+          AND hd.trangThai = com.qlytro.entity.enums.TrangThaiHopDong.ACTIVE
+          AND (:toaNhaId IS NULL OR p.toaNha.id = :toaNhaId)
+    """)
+    long countKhachThueHienTai(@Param("toaNhaId") Integer toaNhaId);
 }
 

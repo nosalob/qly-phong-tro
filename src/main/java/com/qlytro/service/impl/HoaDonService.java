@@ -1,6 +1,7 @@
 package com.qlytro.service.impl;
 
 import com.qlytro.dto.response.HoaDonChiTietResponse;
+import com.qlytro.dto.response.HoaDonQuaHanResponse;
 import com.qlytro.dto.response.HoaDonResponse;
 import com.qlytro.entity.*;
 import com.qlytro.entity.enums.TrangThaiChiSo;
@@ -11,13 +12,20 @@ import com.qlytro.repository.*;
 import com.qlytro.service.base.BaseService;
 import com.qlytro.service.strategy.TinhTienContext;
 import com.qlytro.service.strategy.TinhTienStrategy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -31,19 +39,22 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
     private final BangGiaDienNuocRepository bangGiaRepository;
     private final PhiDichVuRepository phiDichVuRepository;
     private final KhachThueRepository khachThueRepository;
+    private final NhacThanhToanRepository nhacThanhToanRepository;
 
-    // Strategy Pattern: danh sach tat ca cac chien luoc tinh tien duoc Spring inject tu dong
+    // Strategy Pattern: danh sach tat ca cac chien luoc tinh tien duoc Spring
+    // inject tu dong
     private final List<TinhTienStrategy> strategies;
 
     public HoaDonService(HoaDonRepository hoaDonRepository,
-                         HoaDonChiTietRepository chiTietRepository,
-                         HopDongRepository hopDongRepository,
-                         HopDongKhachThueRepository hdktRepository,
-                         ChiSoDienNuocRepository chiSoRepository,
-                         BangGiaDienNuocRepository bangGiaRepository,
-                         PhiDichVuRepository phiDichVuRepository,
-                         KhachThueRepository khachThueRepository,
-                         List<TinhTienStrategy> strategies) {
+            HoaDonChiTietRepository chiTietRepository,
+            HopDongRepository hopDongRepository,
+            HopDongKhachThueRepository hdktRepository,
+            ChiSoDienNuocRepository chiSoRepository,
+            BangGiaDienNuocRepository bangGiaRepository,
+            PhiDichVuRepository phiDichVuRepository,
+            KhachThueRepository khachThueRepository,
+            NhacThanhToanRepository nhacThanhToanRepository,
+            List<TinhTienStrategy> strategies) {
         this.hoaDonRepository = hoaDonRepository;
         this.chiTietRepository = chiTietRepository;
         this.hopDongRepository = hopDongRepository;
@@ -52,6 +63,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         this.bangGiaRepository = bangGiaRepository;
         this.phiDichVuRepository = phiDichVuRepository;
         this.khachThueRepository = khachThueRepository;
+        this.nhacThanhToanRepository = nhacThanhToanRepository;
         this.strategies = strategies;
     }
 
@@ -70,6 +82,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                 .map(this::toResponse)
                 .toList();
     }
+
     // [THÊM MỚI] Lọc hóa đơn dành cho chủ trọ
     @Transactional(readOnly = true)
     public List<HoaDonResponse> findAllFiltered(
@@ -83,15 +96,16 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         String cleanDenThang = (denThang != null && !denThang.isBlank()) ? denThang.trim() : null;
 
         return hoaDonRepository.findAllFiltered(
-                        toaNhaId,
-                        phongId,
-                        cleanTuThang,
-                        cleanDenThang,
-                        trangThai)
+                toaNhaId,
+                phongId,
+                cleanTuThang,
+                cleanDenThang,
+                trangThai)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
+
     /**
      * Lay danh sach hoa don cua khach thue dang dang nhap.
      * Truy van: nguoi_dung_id -> khach_thue -> hop_dong -> hoa_don
@@ -102,7 +116,8 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         com.qlytro.entity.KhachThue khachThue = khachThueRepository
                 .findByNguoiDung_Id(nguoiDungId)
                 .orElse(null);
-        if (khachThue == null) return java.util.List.of();
+        if (khachThue == null)
+            return java.util.List.of();
 
         // Tim tat ca hop_dong cua khach nay (qua bang trung gian)
         List<Integer> hopDongIds = hdktRepository.findByKhachThue_Id(khachThue.getId())
@@ -110,7 +125,8 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                 .map(hdkt -> hdkt.getHopDong().getId())
                 .toList();
 
-        if (hopDongIds.isEmpty()) return java.util.List.of();
+        if (hopDongIds.isEmpty())
+            return java.util.List.of();
 
         // Lay hoa don cua tat ca hop dong do
         return hopDongIds.stream()
@@ -119,14 +135,16 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                 .sorted(
                         java.util.Comparator
                                 .comparingInt((HoaDon hd) -> {
-                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHUA_THANH_TOAN) return 0;
-                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHO_DUYET) return 1;
-                                    if (hd.getTrangThai() == TrangThaiHoaDon.DA_THANH_TOAN) return 2;
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHUA_THANH_TOAN)
+                                        return 0;
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.CHO_DUYET)
+                                        return 1;
+                                    if (hd.getTrangThai() == TrangThaiHoaDon.DA_THANH_TOAN)
+                                        return 2;
                                     return 3;
                                 })
                                 .thenComparing(HoaDon::getThangNam,
-                                        java.util.Comparator.reverseOrder())
-                )
+                                        java.util.Comparator.reverseOrder()))
                 .map(this::toResponse)
                 .toList();
     }
@@ -143,7 +161,8 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
             KhachThue khachThue = khachThueRepository
                     .findByNguoiDung_Id(nguoiDungId)
                     .orElse(null);
-            if (khachThue == null || !hdktRepository.existsByHopDong_IdAndKhachThue_Id(hd.getHopDong().getId(), khachThue.getId())) {
+            if (khachThue == null
+                    || !hdktRepository.existsByHopDong_IdAndKhachThue_Id(hd.getHopDong().getId(), khachThue.getId())) {
                 throw new ResourceNotFoundException("Hóa đơn", id);
             }
         }
@@ -198,12 +217,27 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
 
         YearMonth ymThangBatDau = YearMonth.from(hopDong.getNgayBatDau());
 
-        // Neu thang hoa don la thang bat dau hop dong -> chi thu tien phong + phi dich vu, chua co dien nuoc ky truoc
+        // Neu thang hoa don la thang bat dau hop dong -> chi thu tien phong + phi dich
+        // vu, chua co dien nuoc ky truoc
         boolean laThangDau = ymThangHoaDon.equals(ymThangBatDau);
         String thangTruoc = ymThangHoaDon.minusMonths(1).toString();
         ChiSoDienNuoc chiSo = null;
 
         if (!laThangDau) {
+            // Quy tắc: Hóa đơn tháng liền trước phải tồn tại và đã thanh toán hoàn tất
+            // (DA_THANH_TOAN)
+            HoaDon hdThangTruoc = hoaDonRepository.findByHopDong_IdAndThangNam(hopDongId, thangTruoc)
+                    .orElseThrow(() -> new BusinessException("Chưa lập hóa đơn tháng liền trước ("
+                            + thangTruoc
+                            + "). Vui lòng lập và thanh toán hóa đơn tháng trước trước khi tạo hóa đơn tháng này."));
+
+            if (!TrangThaiHoaDon.DA_THANH_TOAN.equals(hdThangTruoc.getTrangThai())) {
+                throw new BusinessException("Hóa đơn tháng liền kề trước (" + thangTruoc
+                        + ") chưa được thanh toán hoàn tất (trạng thái hiện tại: "
+                        + hdThangTruoc.getTrangThai().getLabel()
+                        + "). Vui lòng hoàn tất thanh toán trước khi lập hóa đơn tháng tiếp theo.");
+            }
+
             // Cac thang tiep theo: bat buoc phai co chi so dien nuoc thang truoc da chot
             chiSo = chiSoRepository
                     .findByPhong_IdAndThangNam(hopDong.getPhong().getId(), thangTruoc)
@@ -220,6 +254,14 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
 
         List<PhiDichVu> danhSachPhi = phiDichVuRepository.findByDangApDung(true);
 
+        // Tim nguoi dai dien hop le hien tai de luu snapshot vao hoa don
+        HopDongKhachThue daiDienHdkt = hdktRepository.findByHopDong_Id(hopDongId).stream()
+                .filter(hdkt -> Boolean.TRUE.equals(hdkt.getLaDaiDien()) && Boolean.TRUE.equals(hdkt.getDangO()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(
+                        "Hợp đồng chưa có khách thuê đại diện hợp lệ (đang ở và là đại diện). Vui lòng cập nhật người đại diện trước khi lập hóa đơn."));
+        KhachThue nguoiDaiDien = daiDienHdkt.getKhachThue();
+
         // Xay dung context cho Strategy Pattern
         TinhTienContext context = TinhTienContext.builder()
                 .hopDong(hopDong)
@@ -232,6 +274,7 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         // Tao hoa don truoc (can id de lien ket chi tiet)
         HoaDon hoaDon = new HoaDon();
         hoaDon.setHopDong(hopDong);
+        hoaDon.setNguoiDaiDien(nguoiDaiDien);
         hoaDon.setThangNam(thangNam);
         hoaDon.setTrangThai(TrangThaiHoaDon.CHUA_THANH_TOAN);
         hoaDon.setTongTien(BigDecimal.ZERO); // se cap nhat sau
@@ -320,6 +363,100 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         hoaDonRepository.delete(hd);
     }
 
+    public static String getThangNamMocQuaHan(LocalDate today) {
+        if (today.getDayOfMonth() >= 6) {
+            return YearMonth.from(today).toString();
+        } else {
+            return YearMonth.from(today).minusMonths(1).toString();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public long countHoaDonQuaHan() {
+        LocalDate today = LocalDate.now();
+        String thangNamMoc = getThangNamMocQuaHan(today);
+        return hoaDonRepository.countHoaDonQuaHan(TrangThaiHoaDon.CHUA_THANH_TOAN, thangNamMoc);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<HoaDonQuaHanResponse> findHoaDonQuaHanPage(Integer toaNhaId, Pageable pageable) {
+        LocalDate today = LocalDate.now();
+        String thangNamMoc = getThangNamMocQuaHan(today);
+        Page<HoaDon> page = hoaDonRepository.findHoaDonQuaHanPage(TrangThaiHoaDon.CHUA_THANH_TOAN, thangNamMoc,
+                toaNhaId, pageable);
+
+        if (page.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Integer> hoaDonIds = page.getContent().stream().map(HoaDon::getId).toList();
+
+        // 1 truy vấn lấy toàn bộ lịch sử nhắc nợ của các hóa đơn trong trang (tránh
+        // N+1)
+        List<NhacThanhToan> danhSachNhac = nhacThanhToanRepository.findByHoaDonIdInWithNguoiDung(hoaDonIds);
+        Map<Integer, List<NhacThanhToan>> nhacByHoaDonId = danhSachNhac.stream()
+                .collect(Collectors.groupingBy(n -> n.getHoaDon().getId()));
+
+        // Với các hóa đơn cũ chưa có snapshot (nguoiDaiDien == null), batch tìm đại
+        // diện hiện tại để tránh N+1
+        List<Integer> hopDongIdsNeedRep = page.getContent().stream()
+                .filter(hd -> hd.getNguoiDaiDien() == null)
+                .map(hd -> hd.getHopDong().getId())
+                .distinct()
+                .toList();
+
+        Map<Integer, HopDongKhachThue> repByHopDongId = Collections.emptyMap();
+        if (!hopDongIdsNeedRep.isEmpty()) {
+            repByHopDongId = hdktRepository.findDaiDienByHopDongIds(hopDongIdsNeedRep).stream()
+                    .collect(Collectors.toMap(hdkt -> hdkt.getHopDong().getId(), hdkt -> hdkt, (a, b) -> a));
+        }
+
+        final Map<Integer, HopDongKhachThue> finalRepByHopDongId = repByHopDongId;
+        List<HoaDonQuaHanResponse> responses = page.getContent().stream().map(hd -> {
+            YearMonth ym = YearMonth.parse(hd.getThangNam());
+            LocalDate hanThanhToan = ym.atDay(5);
+            long soNgayQuaHan = java.time.temporal.ChronoUnit.DAYS.between(hanThanhToan, today);
+
+            List<NhacThanhToan> nhacs = nhacByHoaDonId.getOrDefault(hd.getId(), Collections.emptyList());
+            long soLanNhac = nhacs.size();
+            LocalDateTime thoiGianNhacCuoi = nhacs.isEmpty() ? null : nhacs.get(0).getThoiGianNhac();
+
+            String tenDaiDien;
+            String sdtDaiDien;
+            boolean coSnapshot = hd.getNguoiDaiDien() != null;
+            String ghiChu = null;
+
+            if (coSnapshot) {
+                tenDaiDien = hd.getNguoiDaiDien().getHoTen();
+                sdtDaiDien = hd.getNguoiDaiDien().getSdt();
+            } else {
+                HopDongKhachThue hdkt = finalRepByHopDongId.get(hd.getHopDong().getId());
+                tenDaiDien = hdkt != null ? hdkt.getKhachThue().getHoTen() : "Chưa xác định";
+                sdtDaiDien = hdkt != null ? hdkt.getKhachThue().getSdt() : "";
+                ghiChu = "Chưa có dữ liệu người đại diện tại thời điểm lập (hóa đơn cũ)";
+            }
+
+            return HoaDonQuaHanResponse.builder()
+                    .id(hd.getId())
+                    .hopDongId(hd.getHopDong().getId())
+                    .thangNam(hd.getThangNam())
+                    .soPhong(hd.getHopDong().getPhong().getSoPhong())
+                    .tenToaNha(hd.getHopDong().getPhong().getToaNha().getTenToaNha())
+                    .tenKhachDaiDien(tenDaiDien)
+                    .sdtKhachDaiDien(sdtDaiDien)
+                    .coSnapshotDaiDien(coSnapshot)
+                    .ghiChuDaiDien(ghiChu)
+                    .tongTien(hd.getTongTien())
+                    .hanThanhToan(hanThanhToan)
+                    .soNgayQuaHan(soNgayQuaHan)
+                    .soLanNhac(soLanNhac)
+                    .thoiGianNhacCuoi(thoiGianNhacCuoi)
+                    .build();
+        }).toList();
+
+        return new PageImpl<>(responses, pageable, page.getTotalElements());
+    }
+
     private HoaDonResponse toResponse(HoaDon entity) {
         HoaDonResponse r = new HoaDonResponse();
         r.setId(entity.getId());
@@ -334,6 +471,40 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
         r.setNgayTao(entity.getNgayTao());
         r.setNgayThanhToan(entity.getNgayThanhToan());
         r.setLyDoTuChoi(lyDoTuChoiMap.get(entity.getId()));
+
+        // Han thanh toan luon la ngay 05 cua thang ghi tren hoa don
+        YearMonth ym = YearMonth.parse(entity.getThangNam());
+        LocalDate hanThanhToan = ym.atDay(5);
+        r.setHanThanhToan(hanThanhToan);
+
+        LocalDate today = LocalDate.now();
+        boolean isQuaHan = TrangThaiHoaDon.CHUA_THANH_TOAN.equals(entity.getTrangThai()) && today.isAfter(hanThanhToan);
+        r.setQuaHan(isQuaHan);
+        if (isQuaHan) {
+            r.setSoNgayQuaHan(java.time.temporal.ChronoUnit.DAYS.between(hanThanhToan, today));
+        } else {
+            r.setSoNgayQuaHan(0);
+        }
+
+        // Snapshot dai dien tai thoi diem lap hoa don
+        if (entity.getNguoiDaiDien() != null) {
+            r.setTenKhachDaiDien(entity.getNguoiDaiDien().getHoTen());
+            r.setSdtKhachDaiDien(entity.getNguoiDaiDien().getSdt());
+            r.setCoSnapshotDaiDien(true);
+            r.setGhiChuDaiDien(null);
+        } else {
+            // Hoa don cu chua co snapshot -> lay thong tin dai dien hien tai va chu thich
+            // ro gioi han du lieu
+            hdktRepository.findByHopDong_Id(entity.getHopDong().getId()).stream()
+                    .filter(hdkt -> Boolean.TRUE.equals(hdkt.getLaDaiDien()) && Boolean.TRUE.equals(hdkt.getDangO()))
+                    .findFirst()
+                    .ifPresent(hdkt -> {
+                        r.setTenKhachDaiDien(hdkt.getKhachThue().getHoTen());
+                        r.setSdtKhachDaiDien(hdkt.getKhachThue().getSdt());
+                    });
+            r.setCoSnapshotDaiDien(false);
+            r.setGhiChuDaiDien("Chưa có dữ liệu người đại diện tại thời điểm lập (hóa đơn cũ)");
+        }
 
         // Load chi tiet
         List<HoaDonChiTietResponse> danhSachChiTiet = chiTietRepository
@@ -351,11 +522,6 @@ public class HoaDonService implements BaseService<HoaDonResponse, Integer> {
                 }).toList();
         r.setDanhSachChiTiet(danhSachChiTiet);
 
-        // Lay ten khach dai dien qua repository (HopDong entity khong co collection nay)
-        hdktRepository.findByHopDong_Id(entity.getHopDong().getId()).stream()
-                .filter(hdkt -> Boolean.TRUE.equals(hdkt.getLaDaiDien()) && Boolean.TRUE.equals(hdkt.getDangO()))
-                .findFirst()
-                .ifPresent(hdkt -> r.setTenKhachDaiDien(hdkt.getKhachThue().getHoTen()));
         return r;
     }
 }

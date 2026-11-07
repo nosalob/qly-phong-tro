@@ -1,92 +1,172 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><title>Nhập chỉ số</title></head>
+<head>
+    <title>Nhập chỉ số</title>
+</head>
 <body>
 <div th:fragment="content">
+
     <div class="d-flex align-items-center gap-2 mb-3">
-        <a th:href="@{/landlord/chi-so}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;"><i class="bi bi-arrow-left"></i></a>
-        <h1 class="page-title mb-0">Nhập chỉ số Điện / Nước</h1>
+        <a th:href="@{/landlord/chi-so}"
+           class="btn btn-sm btn-outline-secondary"
+           style="border-radius:8px;">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+
+        <h1 class="page-title mb-0"
+            th:text="${isEdit} ? 'Sửa chỉ số Điện / Nước' : 'Nhập chỉ số Điện / Nước'">
+        </h1>
     </div>
+
     <div class="card-box" style="max-width:600px;">
         <div class="card-box-hd">
-            <h5><i class="bi bi-lightning-charge me-2" style="color:#6366f1"></i>Chỉ số điện nước</h5>
+            <h5>
+                <i class="bi bi-lightning-charge me-2" style="color:#6366f1"></i>
+                Chỉ số điện nước
+            </h5>
         </div>
+
         <div class="p-4">
-            <form th:action="@{/landlord/chi-so/nhap}" th:object="${request}" method="post" novalidate>
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <form th:action="${isEdit} ? @{/landlord/chi-so/{id}/sua(id=${id})} : @{/landlord/chi-so/nhap}"
+                  th:object="${request}"
+                  method="post"
+                  novalidate>
+
+                <input type="hidden"
+                       th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}">
 
                 <div class="row g-3 mb-3">
                     <div class="col-7">
-                        <label class="form-label fw-500">Phòng <span class="text-danger">*</span></label>
-                        <select th:field="*{phongId}" class="form-select"
-                                onchange="if(this.value) window.location.href='/landlord/chi-so/nhap?phongId=' + this.value;"
+                        <label class="form-label fw-500">
+                            Phòng <span class="text-danger">*</span>
+                        </label>
+
+                        <select th:field="*{phongId}"
+                                class="form-select"
+                                th:attr="onchange=${isEdit} ? '' : 'if(this.value) window.location.href=\'/landlord/chi-so/nhap?phongId=\' + this.value;'"
                                 th:classappend="${#fields.hasErrors('phongId')} ? 'is-invalid'">
+
                             <option value="">-- Chọn phòng --</option>
+
                             <option th:each="p : ${danhSachPhong}"
                                     th:if="${p.trangThai != null and p.trangThai.name() == 'DANG_THUE'}"
                                     th:value="${p.id}"
-                                    th:text="${p.tenToaNha + ' - Phòng ' + p.soPhong}"></option>
+                                    th:text="${p.tenToaNha + ' - Phòng ' + p.soPhong}">
+                            </option>
                         </select>
+
                         <div class="invalid-feedback" th:errors="*{phongId}"></div>
                     </div>
+
                     <div class="col-5">
-                        <label class="form-label fw-500">Tháng-Năm <span class="text-danger">*</span></label>
-                        <input type="month" th:field="*{thangNam}" class="form-control"
+                        <label class="form-label fw-500">
+                            Tháng-Năm <span class="text-danger">*</span>
+                        </label>
+
+                        <input type="month"
+                               th:field="*{thangNam}"
+                               class="form-control"
                                th:classappend="${#fields.hasErrors('thangNam')} ? 'is-invalid'">
+
                         <div class="invalid-feedback" th:errors="*{thangNam}"></div>
                     </div>
                 </div>
 
-                <!-- Chi so dien -->
-                <div class="mb-3 p-3 rounded" style="background:#fffbeb; border:1px solid #fef08a;">
+                <!-- Chỉ số điện -->
+                <div class="mb-3 p-3 rounded"
+                     style="background:#fffbeb; border:1px solid #fef08a;">
+
                     <div class="fw-600 mb-2" style="color:#854d0e;">
-                        <i class="bi bi-lightning-charge me-1"></i>Chỉ số Điện
+                        <i class="bi bi-lightning-charge me-1"></i>
+                        Chỉ số Điện
                     </div>
+
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label mb-1" style="font-size:.82rem;">
                                 Cũ (kWh)
-                                <small th:if="${daCoChiSoCu}" class="text-muted">(Tự động)</small>
+                                <small th:if="${daCoChiSoCu}" class="text-muted">
+                                    (Tự động)
+                                </small>
                             </label>
-                            <input type="number" th:field="*{chiSoDienCu}" class="form-control form-control-sm"
+
+                            <input type="number"
+                                   th:field="*{chiSoDienCu}"
+                                   class="form-control form-control-sm"
                                    th:readonly="${daCoChiSoCu}"
                                    th:classappend="${#fields.hasErrors('chiSoDienCu')} ? 'is-invalid'"
-                                   placeholder="0" step="0.01" min="0">
+                                   placeholder="0"
+                                   step="0.01"
+                                   min="0">
+
                             <div class="invalid-feedback" th:errors="*{chiSoDienCu}"></div>
                         </div>
+
                         <div class="col-6">
-                            <label class="form-label mb-1" style="font-size:.82rem;">Mới (kWh) <span class="text-danger">*</span></label>
-                            <input type="number" th:field="*{chiSoDienMoi}" class="form-control form-control-sm"
+                            <label class="form-label mb-1" style="font-size:.82rem;">
+                                Mới (kWh) <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="number"
+                                   th:field="*{chiSoDienMoi}"
+                                   class="form-control form-control-sm"
                                    th:classappend="${#fields.hasErrors('chiSoDienMoi')} ? 'is-invalid'"
-                                   placeholder="0" step="0.01" min="0" required>
+                                   placeholder="0"
+                                   step="0.01"
+                                   min="0"
+                                   required>
+
                             <div class="invalid-feedback" th:errors="*{chiSoDienMoi}"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Chi so nuoc -->
-                <div class="mb-3 p-3 rounded" style="background:#eff6ff; border:1px solid #bfdbfe;">
+                <!-- Chỉ số nước -->
+                <div class="mb-3 p-3 rounded"
+                     style="background:#eff6ff; border:1px solid #bfdbfe;">
+
                     <div class="fw-600 mb-2" style="color:#1e40af;">
-                        <i class="bi bi-droplet me-1"></i>Chỉ số Nước
+                        <i class="bi bi-droplet me-1"></i>
+                        Chỉ số Nước
                     </div>
+
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label mb-1" style="font-size:.82rem;">
                                 Cũ (m³)
-                                <small th:if="${daCoChiSoCu}" class="text-muted">(Tự động)</small>
+                                <small th:if="${daCoChiSoCu}" class="text-muted">
+                                    (Tự động)
+                                </small>
                             </label>
-                            <input type="number" th:field="*{chiSoNuocCu}" class="form-control form-control-sm"
+
+                            <input type="number"
+                                   th:field="*{chiSoNuocCu}"
+                                   class="form-control form-control-sm"
                                    th:readonly="${daCoChiSoCu}"
                                    th:classappend="${#fields.hasErrors('chiSoNuocCu')} ? 'is-invalid'"
-                                   placeholder="0" step="0.01" min="0">
+                                   placeholder="0"
+                                   step="0.01"
+                                   min="0">
+
                             <div class="invalid-feedback" th:errors="*{chiSoNuocCu}"></div>
                         </div>
+
                         <div class="col-6">
-                            <label class="form-label mb-1" style="font-size:.82rem;">Mới (m³) <span class="text-danger">*</span></label>
-                            <input type="number" th:field="*{chiSoNuocMoi}" class="form-control form-control-sm"
+                            <label class="form-label mb-1" style="font-size:.82rem;">
+                                Mới (m³) <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="number"
+                                   th:field="*{chiSoNuocMoi}"
+                                   class="form-control form-control-sm"
                                    th:classappend="${#fields.hasErrors('chiSoNuocMoi')} ? 'is-invalid'"
-                                   placeholder="0" step="0.01" min="0" required>
+                                   placeholder="0"
+                                   step="0.01"
+                                   min="0"
+                                   required>
+
                             <div class="invalid-feedback" th:errors="*{chiSoNuocMoi}"></div>
                         </div>
                     </div>
@@ -94,16 +174,31 @@
 
                 <div class="mb-4">
                     <label class="form-label fw-500">Ghi chú</label>
-                    <textarea th:field="*{ghiChu}" class="form-control" rows="2" placeholder="Ghi chú thêm nếu cần..."></textarea>
+
+                    <textarea th:field="*{ghiChu}"
+                              class="form-control"
+                              rows="2"
+                              placeholder="Ghi chú thêm nếu cần...">
+                    </textarea>
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-accent"><i class="bi bi-check-circle me-1"></i>Lưu chỉ số</button>
-                    <a th:href="@{/landlord/chi-so}" class="btn btn-outline-secondary" style="border-radius:8px;">Hủy</a>
+                    <button type="submit" class="btn btn-accent">
+                        <i class="bi bi-check-circle me-1"></i>
+                        <span th:text="${isEdit} ? 'Cập nhật chỉ số' : 'Lưu chỉ số'"></span>
+                    </button>
+
+                    <a th:href="@{/landlord/chi-so}"
+                       class="btn btn-outline-secondary"
+                       style="border-radius:8px;">
+                        Hủy
+                    </a>
                 </div>
+
             </form>
         </div>
     </div>
+
 </div>
 </body>
 </html>

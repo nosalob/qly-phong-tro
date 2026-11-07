@@ -8,7 +8,7 @@
 <!-- SỬA Ở ĐÂY 2: Đổi <th:block th:fragment="pageContent"> thành <div th:fragment="content"> -->
 <div th:fragment="content">
     <div class="d-flex align-items-center gap-2 mb-3">
-        <a th:href="@{/landlord/phong}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;"><i class="bi bi-arrow-left"></i></a>
+        <a th:href="${request.toaNhaId != null ? '/landlord/quan-ly?toaNhaId=' + request.toaNhaId : '/landlord/quan-ly'}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;"><i class="bi bi-arrow-left"></i></a>
         <h1 class="page-title mb-0" th:text="${pageTitle}">Form Phòng</h1>
     </div>
     <div class="card-box" style="max-width:580px;">
@@ -78,7 +78,7 @@
                         <i class="bi bi-check-circle me-1"></i>
                         <span th:text="${id != null ? 'Cập nhật' : 'Thêm mới'}">Lưu</span>
                     </button>
-                    <a th:href="@{/landlord/phong}" class="btn btn-outline-secondary" style="border-radius:8px;">Hủy</a>
+                    <a th:href="${request.toaNhaId != null ? '/landlord/quan-ly?toaNhaId=' + request.toaNhaId : '/landlord/quan-ly'}" class="btn btn-outline-secondary" style="border-radius:8px;">Hủy</a>
                 </div>
             </form>
         </div>

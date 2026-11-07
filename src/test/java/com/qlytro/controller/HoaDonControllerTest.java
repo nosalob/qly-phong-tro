@@ -41,7 +41,7 @@ public class HoaDonControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        List<HoaDonResponse> danhSach = (List<HoaDonResponse>) result.getModelAndView().getModel().get("danhSach");
+        List<HoaDonResponse> danhSach = extractDanhSach(result);
         assertNotNull(danhSach);
         assertFalse(danhSach.isEmpty(), "Danh sách hóa đơn không được rỗng");
 
@@ -81,7 +81,7 @@ public class HoaDonControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        List<HoaDonResponse> danhSach = (List<HoaDonResponse>) result.getModelAndView().getModel().get("danhSach");
+        List<HoaDonResponse> danhSach = extractDanhSach(result);
         assertNotNull(danhSach);
         assertFalse(danhSach.isEmpty(), "Danh sách không được rỗng khi submit tham số rỗng");
 
@@ -99,7 +99,7 @@ public class HoaDonControllerTest {
                     .andExpect(status().isOk())
                     .andReturn();
 
-            List<HoaDonResponse> danhSach = (List<HoaDonResponse>) result.getModelAndView().getModel().get("danhSach");
+            List<HoaDonResponse> danhSach = extractDanhSach(result);
             assertNotNull(danhSach);
             for (HoaDonResponse hd : danhSach) {
                 assertEquals(tt, hd.getTrangThai(), "Mỗi hóa đơn phải đúng trạng thái đã lọc");
@@ -125,7 +125,7 @@ public class HoaDonControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        List<HoaDonResponse> danhSach = (List<HoaDonResponse>) result.getModelAndView().getModel().get("danhSach");
+        List<HoaDonResponse> danhSach = extractDanhSach(result);
         assertNotNull(danhSach);
         assertFalse(danhSach.isEmpty(), "Phải tìm thấy ít nhất hóa đơn mẫu");
         for (HoaDonResponse hd : danhSach) {
@@ -139,5 +139,19 @@ public class HoaDonControllerTest {
         if (tt == TrangThaiHoaDon.CHUA_THANH_TOAN) return 1;
         if (tt == TrangThaiHoaDon.DA_THANH_TOAN) return 2;
         return 3;
+    }
+
+    private List<HoaDonResponse> extractDanhSach(MvcResult result) {
+        if (result.getModelAndView() == null || result.getModelAndView().getModel() == null) {
+            return null;
+        }
+        Object obj = result.getModelAndView().getModel().get("danhSach");
+        if (obj instanceof List<?> list) {
+            return list.stream()
+                    .filter(HoaDonResponse.class::isInstance)
+                    .map(HoaDonResponse.class::cast)
+                    .toList();
+        }
+        return null;
     }
 }

@@ -31,7 +31,7 @@ public class AuthController {
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             boolean isLandlord = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_LANDLORD"));
-            return isLandlord ? "redirect:/landlord/dashboard" : "redirect:/tenant/dashboard";
+            return isLandlord ? "redirect:/landlord/cong-viec" : "redirect:/tenant/dashboard";
         }
         return "auth/login";
     }
@@ -42,7 +42,7 @@ public class AuthController {
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
             boolean isLandlord = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_LANDLORD"));
-            return isLandlord ? "redirect:/landlord/dashboard" : "redirect:/tenant/dashboard";
+            return isLandlord ? "redirect:/landlord/cong-viec" : "redirect:/tenant/dashboard";
         }
         return "redirect:/login";
     }
@@ -81,7 +81,7 @@ public class AuthController {
 
             boolean isLandlord = userDetails.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_LANDLORD"));
-            return isLandlord ? "redirect:/landlord/dashboard" : "redirect:/tenant/dashboard";
+            return isLandlord ? "redirect:/landlord/cong-viec" : "redirect:/tenant/dashboard";
         } catch (BusinessException ex) {
             model.addAttribute("errorMsg", ex.getMessage());
             model.addAttribute("isRequired", userDetails != null && userDetails.isMustChangePassword());

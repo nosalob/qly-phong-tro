@@ -66,21 +66,21 @@ public class NguoiDungController {
     }
 
     @PostMapping("/{id}/khoa")
-    public String khoa(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String khoa(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
         nguoiDungService.khoaTaiKhoan(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã khóa tài khoản.");
         return "redirect:/landlord/nguoi-dung";
     }
 
     @PostMapping("/{id}/mo-khoa")
-    public String moKhoa(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String moKhoa(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
         nguoiDungService.moKhoa(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã mở khóa tài khoản.");
         return "redirect:/landlord/nguoi-dung";
     }
 
     @PostMapping("/{id}/reset-mat-khau")
-    public String resetMatKhau(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String resetMatKhau(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
         nguoiDungService.resetMatKhau(id);
         redirectAttributes.addFlashAttribute("successMsg",
                 "Đã reset mật khẩu tài khoản về mặc định (123456). Tài khoản sẽ bắt buộc phải đổi mật khẩu khi đăng nhập!");

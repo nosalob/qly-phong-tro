@@ -4,7 +4,7 @@
 <div th:fragment="content">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="page-title mb-0" th:text="${id != null ? 'Sửa Tòa nhà' : 'Thêm Tòa nhà'}">Thêm Tòa nhà</h1>
-        <a th:href="@{/landlord/toa-nha}" class="btn btn-outline-secondary">
+        <a th:href="${id != null ? '/landlord/quan-ly?toaNhaId=' + id : '/landlord/quan-ly'}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Quay lại
         </a>
     </div>
@@ -43,7 +43,7 @@
                 <button type="submit" class="btn btn-accent px-4">
                     <i class="bi bi-check2-circle me-1"></i>Lưu thông tin
                 </button>
-                <a th:href="@{/landlord/toa-nha}" class="btn btn-light px-3">Hủy</a>
+                <a th:href="${id != null ? '/landlord/quan-ly?toaNhaId=' + id : '/landlord/quan-ly'}" class="btn btn-light px-3">Hủy</a>
             </div>
         </form>
     </div>

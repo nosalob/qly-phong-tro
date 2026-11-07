@@ -33,7 +33,7 @@ public class TenantBoiThuongController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Integer id,
+    public String detail(@PathVariable(name = "id") Integer id,
                          @AuthenticationPrincipal CustomUserDetails userDetails,
                          Model model) {
         model.addAttribute("boiThuong", boiThuongService.findByIdOfNguoiDung(id, userDetails.getId()));
@@ -43,7 +43,7 @@ public class TenantBoiThuongController {
     }
 
     @PostMapping("/{id}/nop-tien")
-    public String nopTien(@PathVariable Integer id,
+    public String nopTien(@PathVariable(name = "id") Integer id,
                           @RequestParam(value = "file", required = false) MultipartFile file,
                           @AuthenticationPrincipal CustomUserDetails userDetails,
                           RedirectAttributes redirectAttributes) {

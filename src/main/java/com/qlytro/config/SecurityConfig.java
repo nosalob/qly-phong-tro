@@ -74,7 +74,7 @@ public class SecurityConfig {
 
     /**
      * Sau khi dang nhap thanh cong, chuyen huong theo vai tro:
-     * CHU_TRO -> /landlord/dashboard
+     * CHU_TRO
      * KHACH_THUE -> /tenant/dashboard
      */
     @Bean
@@ -89,7 +89,7 @@ public class SecurityConfig {
             boolean isLandlord = authentication.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_LANDLORD"));
             if (isLandlord) {
-                response.sendRedirect("/landlord/dashboard");
+                response.sendRedirect("/landlord/cong-viec");
             } else {
                 response.sendRedirect("/tenant/dashboard");
             }

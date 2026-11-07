@@ -23,6 +23,15 @@ public class HoaDon {
                 foreignKey = @ForeignKey(name = "fk_hoa_don_hop_dong"))
     private HopDong hopDong;
 
+    /**
+     * Snapshot nguoi dai dien tai thoi diem lap hoa don.
+     * NULL doi voi hoa don cu truoc migration (du lieu lich su).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "nguoi_dai_dien_id",
+                foreignKey = @ForeignKey(name = "fk_hoa_don_nguoi_dai_dien"))
+    private KhachThue nguoiDaiDien;
+
     /** Format: 'YYYY-MM', VD: 2026-09 */
     @Column(name = "thang_nam", nullable = false, length = 7)
     private String thangNam;

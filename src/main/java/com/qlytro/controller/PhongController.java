@@ -29,7 +29,7 @@ public class PhongController {
     }
 
     @GetMapping
-    public String list(@RequestParam(required = false) Integer toaNhaId, Model model) {
+    public String list(@RequestParam(name = "toaNhaId", required = false) Integer toaNhaId, Model model) {
         if (toaNhaId != null) {
             model.addAttribute("danhSach", phongService.findByToaNha(toaNhaId));
             model.addAttribute("toaNhaFilter", toaNhaService.findById(toaNhaId));
@@ -45,7 +45,7 @@ public class PhongController {
     }
 
     @GetMapping("/chi-tiet/{id}")
-    public String chiTiet(@PathVariable Integer id, Model model) {
+    public String chiTiet(@PathVariable(name = "id") Integer id, Model model) {
         model.addAttribute("phong", phongService.findById(id));
         model.addAttribute("danhSachThietBi", thietBiService.findAll());
         model.addAttribute("pageTitle", "Chi tiết Phòng");
@@ -56,7 +56,7 @@ public class PhongController {
     }
 
     @GetMapping("/them")
-    public String themForm(@RequestParam(required = false) Integer toaNhaId, Model model) {
+    public String themForm(@RequestParam(name = "toaNhaId", required = false) Integer toaNhaId, Model model) {
         PhongRequest req = new PhongRequest();
         req.setToaNhaId(toaNhaId);
         model.addAttribute("request", req);
@@ -84,11 +84,11 @@ public class PhongController {
         }
         phongService.create(request);
         redirectAttributes.addFlashAttribute("successMsg", "Thêm phòng thành công!");
-        return "redirect:/landlord/phong";
+        return "redirect:/landlord/quan-ly?toaNhaId=" + request.getToaNhaId();
     }
 
     @GetMapping("/sua/{id}")
-    public String suaForm(@PathVariable Integer id, Model model) {
+    public String suaForm(@PathVariable(name = "id") Integer id, Model model) {
         var p = phongService.findById(id);
         PhongRequest req = new PhongRequest();
         req.setToaNhaId(p.getToaNhaId());
@@ -109,7 +109,7 @@ public class PhongController {
     }
 
     @PostMapping("/sua/{id}")
-    public String sua(@PathVariable Integer id,
+    public String sua(@PathVariable(name = "id") Integer id,
                       @Valid @ModelAttribute("request") PhongRequest request,
                       BindingResult result, Model model,
                       RedirectAttributes redirectAttributes) {
@@ -124,20 +124,26 @@ public class PhongController {
         }
         phongService.update(id, request);
         redirectAttributes.addFlashAttribute("successMsg", "Cập nhật phòng thành công!");
-        return "redirect:/landlord/phong";
+        return "redirect:/landlord/quan-ly?toaNhaId=" + request.getToaNhaId();
     }
 
     @PostMapping("/xoa/{id}")
-    public String xoa(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String xoa(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
+        Integer toaNhaId = null;
+        try {
+            var p = phongService.findById(id);
+            toaNhaId = p.getToaNhaId();
+        } catch (Exception ignored) {
+        }
         phongService.deleteById(id);
         redirectAttributes.addFlashAttribute("successMsg", "Xóa phòng thành công!");
-        return "redirect:/landlord/phong";
+        return toaNhaId != null ? "redirect:/landlord/quan-ly?toaNhaId=" + toaNhaId : "redirect:/landlord/quan-ly";
     }
 
     // Quan ly thiet bi trong phong (Các thao tác này redirect nên giữ nguyên)
     @PostMapping("/{phongId}/them-thiet-bi")
-    public String themThietBiVaoPhong(@PathVariable Integer phongId,
-                                      @RequestParam Integer thietBiId,
+    public String themThietBiVaoPhong(@PathVariable(name = "phongId") Integer phongId,
+                                      @RequestParam(name = "thietBiId") Integer thietBiId,
                                       RedirectAttributes redirectAttributes) {
         thietBiService.themVaoPhong(phongId, thietBiId);
         redirectAttributes.addFlashAttribute("successMsg", "Đã thêm thiết bị vào phòng!");
@@ -145,8 +151,8 @@ public class PhongController {
     }
 
     @PostMapping("/{phongId}/xoa-thiet-bi/{thietBiId}")
-    public String xoaThietBiKhoiPhong(@PathVariable Integer phongId,
-                                      @PathVariable Integer thietBiId,
+    public String xoaThietBiKhoiPhong(@PathVariable(name = "phongId") Integer phongId,
+                                      @PathVariable(name = "thietBiId") Integer thietBiId,
                                       RedirectAttributes redirectAttributes) {
         thietBiService.xoaKhoiPhong(phongId, thietBiId);
         redirectAttributes.addFlashAttribute("successMsg", "Đã xóa thiết bị khỏi phòng!");
@@ -154,14 +160,14 @@ public class PhongController {
     }
 
     @PostMapping("/{id}/ngung-su-dung")
-    public String ngungSuDung(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String ngungSuDung(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
         phongService.ngungSuDung(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã chuyển phòng sang trạng thái Ngừng sử dụng.");
         return "redirect:/landlord/phong/chi-tiet/" + id;
     }
 
     @PostMapping("/{id}/mo-lai")
-    public String moLai(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
+    public String moLai(@PathVariable(name = "id") Integer id, RedirectAttributes redirectAttributes) {
         phongService.moLai(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã mở lại phòng thành công (trạng thái Trống).");
         return "redirect:/landlord/phong/chi-tiet/" + id;

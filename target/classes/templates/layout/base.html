@@ -70,10 +70,10 @@
         </div>
         <div sec:authorize="hasRole('LANDLORD')">
             <div class="sb-section">Tổng quan</div>
-            <a th:href="@{/landlord/dashboard}" class="sb-link"><i class="bi bi-speedometer2"></i>Dashboard</a>
+            <a th:href="@{/landlord/thong-ke}" class="sb-link" th:classappend="${activeMenu == 'thongKe'} ? ' active' : ''"><i class="bi bi-bar-chart-line"></i>Thống kê</a>
+            <a th:href="@{/landlord/cong-viec}" class="sb-link" th:classappend="${activeMenu == 'congViec'} ? ' active' : ''"><i class="bi bi-card-checklist"></i>Công việc</a>
             <div class="sb-section">Quản lý</div>
-            <a th:href="@{/landlord/toa-nha}" class="sb-link"><i class="bi bi-building"></i>Tòa nhà</a>
-            <a th:href="@{/landlord/phong}" class="sb-link"><i class="bi bi-door-open"></i>Phòng</a>
+            <a th:href="@{/landlord/quan-ly}" class="sb-link" th:classappend="${activeMenu == 'quanLy'} ? ' active' : ''"><i class="bi bi-building"></i>Quản lý</a>
             <a th:href="@{/landlord/thiet-bi}" class="sb-link"><i class="bi bi-plug"></i>Thiết bị</a>
             <a th:href="@{/landlord/khach-thue}" class="sb-link"><i class="bi bi-people"></i>Khách thuê</a>
             <a th:href="@{/landlord/hop-dong}" class="sb-link"><i class="bi bi-file-earmark-text"></i>Hợp đồng</a>
@@ -100,7 +100,7 @@
     <div style="padding:10px 8px; border-top:1px solid rgba(255,255,255,.06); margin-top:auto;">
         <a th:href="@{/doi-mat-khau}" class="sb-link mb-1"><i class="bi bi-key"></i>Đổi mật khẩu</a>
         <form th:action="@{/logout}" method="post">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <button type="submit" class="sb-link w-100 border-0 text-start" style="background:transparent;cursor:pointer;">
                 <i class="bi bi-box-arrow-right"></i>Đăng xuất
             </button>

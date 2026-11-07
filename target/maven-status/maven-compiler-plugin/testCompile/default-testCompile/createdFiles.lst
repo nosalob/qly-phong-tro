@@ -1,0 +1,7 @@
+com\qlytro\controller\HoaDonControllerTest.class
+com\qlytro\ThongKeTestRunner.class
+com\qlytro\controller\AuthControllerTest.class
+com\qlytro\TestRunner.class
+com\qlytro\HopDongTestRunner.class
+com\qlytro\service\HoaDonServiceTest.class
+com\qlytro\service\NhacThanhToanServiceTest.class

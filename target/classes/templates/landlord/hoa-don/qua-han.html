@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Hóa đơn quá hạn</title>
+</head>
+<body>
+<div th:fragment="content">
+
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+            <h1 class="page-title mb-1">
+                <i class="bi bi-clock-history text-danger me-2"></i>Hóa đơn quá hạn
+            </h1>
+            <p class="text-muted small mb-0">
+                Các hóa đơn chưa thanh toán vượt quá hạn ngày 05 của kỳ hóa đơn.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/landlord/cong-viec}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Công việc
+            </a>
+            <a th:href="@{/landlord/hoa-don}" class="btn btn-outline-primary">
+                <i class="bi bi-receipt me-1"></i>Tất cả hóa đơn
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert thông báo -->
+    <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i><span th:text="${successMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i><span th:text="${errorMsg}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Thanh lọc theo tòa nhà -->
+    <form th:action="@{/landlord/hoa-don/qua-han}" method="get" class="card-box mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Lọc theo Tòa nhà</label>
+                <select name="toaNhaId" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Tất cả tòa nhà --</option>
+                    <option th:each="toa : ${danhSachToaNha}"
+                            th:value="${toa.id}"
+                            th:text="${toa.tenToaNha}"
+                            th:selected="${toaNhaId != null and toaNhaId == toa.id}">
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-accent">
+                    <i class="bi bi-funnel me-1"></i>Lọc
+                </button>
+                <a th:href="@{/landlord/hoa-don/qua-han}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Tất cả
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Danh sách hóa đơn quá hạn -->
+    <div class="card-box p-0">
+        <div class="card-box-hd p-3 border-bottom d-flex align-items-center justify-content-between">
+            <h5 class="mb-0 fw-bold text-danger">
+                <i class="bi bi-exclamation-octagon me-2"></i>Danh sách quá hạn thanh toán
+            </h5>
+            <span class="badge bg-danger rounded-pill px-3 py-2"
+                  th:text="${pageResult != null ? pageResult.totalElements : 0} + ' hóa đơn'">
+                0 hóa đơn
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th style="width: 80px;">Mã HĐ</th>
+                    <th>Kỳ HĐ</th>
+                    <th>Phòng / Tòa nhà</th>
+                    <th>Người đại diện</th>
+                    <th>Hạn thanh toán</th>
+                    <th>Tổng tiền</th>
+                    <th>Quá hạn</th>
+                    <th>Nhắc nhở</th>
+                    <th class="text-end" style="width: 140px;">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${pageResult == null or pageResult.isEmpty()}">
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-check-circle-fill text-success d-block mb-2" style="font-size: 2.2rem;"></i>
+                        Không có hóa đơn nào quá hạn cần xử lý!
+                    </td>
+                </tr>
+                <tr th:each="hd : ${pageResult.content}">
+                    <td class="fw-bold" th:text="'#' + ${hd.id}">#1</td>
+                    <td>
+                        <span class="badge bg-light text-dark border fw-medium"
+                              th:text="${hd.thangNam}">2026-11</span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark" th:text="${hd.soPhong}">P.101</div>
+                        <small class="text-muted" th:text="${hd.tenToaNha}">Tòa A</small>
+                    </td>
+                    <td>
+                        <div class="fw-medium text-dark" th:text="${hd.tenKhachDaiDien}">Nguyễn Văn A</div>
+                        <small class="text-muted" th:if="${hd.sdtKhachDaiDien != null and !hd.sdtKhachDaiDien.isEmpty()}"
+                               th:text="${hd.sdtKhachDaiDien}">0901234567</small>
+                        <div th:unless="${hd.coSnapshotDaiDien}">
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle"
+                                  style="font-size: .72rem;"
+                                  title="Dữ liệu lịch sử: chưa có snapshot người đại diện tại thời điểm lập hóa đơn">
+                                <i class="bi bi-info-circle me-1"></i>Hóa đơn cũ
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="text-danger fw-semibold"
+                              th:text="${#temporals.format(hd.hanThanhToan, 'dd/MM/yyyy')}">05/11/2026</span>
+                    </td>
+                    <td class="fw-bold text-dark"
+                        th:text="${#numbers.formatDecimal(hd.tongTien, 0, 'COMMA', 0, 'POINT')} + ' đ'">
+                        1.500.000 đ
+                    </td>
+                    <td>
+                        <span class="badge bg-danger" th:text="${hd.soNgayQuaHan} + ' ngày'">
+                            3 ngày
+                        </span>
+                    </td>
+                    <td>
+                        <div th:if="${hd.soLanNhac > 0}">
+                            <span class="badge bg-info-subtle text-info border border-info-subtle"
+                                  th:text="${hd.soLanNhac} + ' lần'">1 lần</span>
+                            <div class="text-muted" style="font-size: .75rem;"
+                                 th:if="${hd.thoiGianNhacCuoi != null}"
+                                 th:text="${#temporals.format(hd.thoiGianNhacCuoi, 'dd/MM HH:mm')}">
+                                06/11 09:30
+                            </div>
+                        </div>
+                        <span th:if="${hd.soLanNhac == 0}" class="text-muted small">Chưa nhắc</span>
+                    </td>
+                    <td class="text-end">
+                        <a th:href="@{/landlord/hoa-don/{id}(id=${hd.id})}"
+                           class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-bell me-1"></i>Chi tiết / Nhắc
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
+             th:if="${pageResult != null and pageResult.totalElements > 0}">
+            <div class="text-muted small">
+                Hiển thị
+                <strong th:text="${pageResult.number * pageResult.size + 1}">1</strong>
+                –
+                <strong th:text="${((pageResult.number + 1) * pageResult.size) > pageResult.totalElements ? pageResult.totalElements : ((pageResult.number + 1) * pageResult.size)}">10</strong>
+                trong <strong th:text="${pageResult.totalElements}">20</strong> hóa đơn quá hạn
+            </div>
+
+            <nav th:if="${pageResult.totalPages > 1}">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${pageResult.first} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hoa-don/qua-han(toaNhaId=${toaNhaId}, page=${pageResult.number - 1}, size=${pageResult.size})}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(0, pageResult.totalPages - 1)}"
+                        th:classappend="${pageNum == pageResult.number} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hoa-don/qua-han(toaNhaId=${toaNhaId}, page=${pageNum}, size=${pageResult.size})}"
+                           th:text="${pageNum + 1}">1</a>
+                    </li>
+
+                    <li class="page-item" th:classappend="${pageResult.last} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hoa-don/qua-han(toaNhaId=${toaNhaId}, page=${pageResult.number + 1}, size=${pageResult.size})}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
+

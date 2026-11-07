@@ -1,88 +1,121 @@
 <!DOCTYPE html>
-<!-- SỬA Ở ĐÂY 1: Bỏ th:replace -->
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><title>Thiết bị</title></head>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <title>Thiết bị</title>
+</head>
+
 <body>
+    <div th:fragment="content">
 
-<!-- SỬA Ở ĐÂY 2: Đổi sang <div th:fragment="content"> -->
-<div th:fragment="content">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="page-title mb-0">Quản lý Thiết bị</h1>
-    </div>
+        <!-- Thông báo thành công -->
+        <div th:if="${successMsg}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
-    <!-- Form thêm thiết bị mới -->
-    <div class="card-box mb-4">
-        <div class="card-box-hd">
-            <h5><i class="bi bi-plus-circle me-2" style="color:#6366f1"></i>Thêm thiết bị mới</h5>
+        <!-- Thông báo lỗi -->
+        <div th:if="${errorMsg}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMsg}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <div class="p-3">
-            <form th:action="@{/landlord/thiet-bi/them}" method="post" class="d-flex gap-2 align-items-end flex-wrap">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <div>
-                    <label class="form-label mb-1" style="font-size:.8rem;color:#64748b;">Tên thiết bị</label>
-                    <input type="text" name="tenThietBi" class="form-control"
-                           placeholder="VD: Điều hòa, Tủ lạnh, Máy nước nóng..." required
-                           style="min-width:300px;">
-                </div>
-                <button type="submit" class="btn btn-accent">
-                    <i class="bi bi-plus-circle me-1"></i>Thêm
-                </button>
-            </form>
-        </div>
-    </div>
 
-    <!-- Danh sách thiết bị -->
-    <div class="card-box">
-        <div class="card-box-hd">
-            <h5><i class="bi bi-plug me-2" style="color:#6366f1"></i>Danh sách thiết bị</h5>
-            <small class="text-muted" th:text="${danhSach != null ? danhSach.size() : 0} + ' thiết bị'"></small>
+        <!-- Tiêu đề trang -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h1 class="page-title mb-0">Quản lý Thiết bị</h1>
         </div>
-        <div th:if="${danhSach == null or danhSach.isEmpty()}" class="p-5 text-center text-muted">
-            <i class="bi bi-plug" style="font-size:3rem;opacity:.3"></i>
-            <p class="mt-2">Chưa có thiết bị nào. Thêm thiết bị đầu tiên bên trên.</p>
-            <p class="text-muted" style="font-size:.85rem;">Sau khi thêm, bạn có thể gán thiết bị vào từng phòng qua trang <strong>Chi tiết Phòng</strong>.</p>
-        </div>
-        <div class="table-responsive" th:if="${danhSach != null and !danhSach.isEmpty()}">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Tên thiết bị</th>
-                    <th>Thao tác</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="item, st : ${danhSach}">
-                    <td th:text="${st.count}" class="text-muted"></td>
-                    <td>
-                        <i class="bi bi-plug me-2" style="color:#6366f1;opacity:.7"></i>
-                        <strong th:text="${item.tenThietBi}"></strong>
-                    </td>
-                    <td>
-                        <form th:action="@{/landlord/thiet-bi/{id}/xoa(id=${item.id})}" method="post"
-                              onsubmit="return confirm('Xác nhận xóa thiết bị này? Thiết bị sẽ bị xóa khỏi tất cả phòng.')">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:7px;">
-                                <i class="bi bi-trash"></i> Xóa
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
 
-    <div class="mt-3 card-box p-3" style="background:#f8fafc;">
-        <small class="text-muted">
-            <i class="bi bi-info-circle me-1" style="color:#6366f1"></i>
-            <strong>Lưu ý:</strong> Thiết bị là danh mục dùng chung. Để gán thiết bị vào phòng cụ thể,
-            vào <a th:href="@{/landlord/phong}" class="text-decoration-none">Quản lý Phòng</a>
-            → chọn phòng → <strong>Chi tiết</strong>.
-        </small>
+        <!-- Form thêm thiết bị -->
+        <div class="card-box mb-4">
+            <div class="p-3">
+                <form th:action="@{/landlord/thiet-bi/them}" method="post"
+                    class="d-flex gap-2 align-items-end flex-wrap">
+
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                    <div>
+                        <label class="form-label mb-1" style="font-size:.8rem;color:#64748b;">
+                            Tên thiết bị
+                        </label>
+
+                        <input type="text" name="tenThietBi" class="form-control"
+                            placeholder="VD: Điều hòa, Tủ lạnh, Máy nước nóng..." required style="min-width:300px;">
+                    </div>
+
+                    <button type="submit" class="btn btn-accent">
+                        <i class="bi bi-plus-circle me-1"></i>Thêm
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Danh sách thiết bị -->
+        <div class="card-box">
+            <div class="card-box-hd">
+                <h5>
+                    <i class="bi bi-plug me-2" style="color:#6366f1"></i>
+                    Danh sách thiết bị
+                </h5>
+
+                <small class="text-muted" th:text="${danhSach != null ? danhSach.size() : 0} + ' thiết bị'">
+                </small>
+            </div>
+
+            <!-- Khi chưa có thiết bị -->
+            <div th:if="${danhSach == null or danhSach.isEmpty()}" class="p-5 text-center text-muted">
+
+                <i class="bi bi-plug" style="font-size:3rem;opacity:.3"></i>
+
+                <p class="mt-2">
+                    Chưa có thiết bị nào. Thêm thiết bị đầu tiên bên trên.
+                </p>
+
+                <p class="text-muted" style="font-size:.85rem;">
+                    Sau khi thêm, bạn có thể gán thiết bị vào từng phòng qua
+                    trang <strong>Chi tiết Phòng</strong>.
+                </p>
+            </div>
+
+            <!-- Bảng thiết bị -->
+            <div class="table-responsive" th:if="${danhSach != null and !danhSach.isEmpty()}">
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tên thiết bị</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr th:each="item, st : ${danhSach}">
+                            <td th:text="${st.count}" class="text-muted"></td>
+
+                            <td>
+                                <i class="bi bi-plug me-2" style="color:#6366f1;opacity:.7"></i>
+                                <strong th:text="${item.tenThietBi}"></strong>
+                            </td>
+
+                            <td>
+                                <form th:action="@{/landlord/thiet-bi/{id}/xoa(id=${item.id})}" method="post"
+                                    onsubmit="return confirm('Xác nhận xóa thiết bị này? Thiết bị sẽ bị xóa khỏi tất cả phòng.')">
+
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        style="border-radius:7px;">
+                                        <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
-    <!-- SỬA Ở ĐÂY 3: Đóng thẻ </div> -->
-</div>
 </body>
+
 </html>

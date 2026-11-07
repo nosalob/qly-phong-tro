@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <title>Công việc cần xử lý</title>
+</head>
+<body>
+<div th:fragment="content">
+
+    <style>
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .task-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .task-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1.5px solid #e2e8f0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all .2s ease;
+            position: relative;
+        }
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+        .task-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        .task-count {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .task-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: .875rem;
+            text-decoration: none;
+            transition: gap .15s ease;
+        }
+        .task-link:hover {
+            gap: 10px;
+        }
+
+        /* Color schemes per task */
+        .task-hoadon {
+            border-left: 5px solid #f59e0b;
+        }
+        .task-hoadon .task-icon-wrap {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .task-hoadon .task-count {
+            color: #d97706;
+        }
+        .task-hoadon .task-link {
+            color: #d97706;
+        }
+
+        .task-suco {
+            border-left: 5px solid #ef4444;
+        }
+        .task-suco .task-icon-wrap {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .task-suco .task-count {
+            color: #dc2626;
+        }
+        .task-suco .task-link {
+            color: #dc2626;
+        }
+
+        .task-phong {
+            border-left: 5px solid #3b82f6;
+        }
+        .task-phong .task-icon-wrap {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .task-phong .task-count {
+            color: #2563eb;
+        }
+        .task-phong .task-link {
+            color: #2563eb;
+        }
+
+        .task-hopdong {
+            border-left: 5px solid #8b5cf6;
+        }
+        .task-hopdong .task-icon-wrap {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+        .task-hopdong .task-count {
+            color: #7c3aed;
+        }
+        .task-hopdong .task-link {
+            color: #7c3aed;
+        }
+
+        .task-quahan {
+            border-left: 5px solid #dc2626;
+        }
+        .task-quahan .task-icon-wrap {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .task-quahan .task-count {
+            color: #b91c1c;
+        }
+        .task-quahan .task-link {
+            color: #b91c1c;
+        }
+    </style>
+
+    <div class="mb-4">
+        <h3 class="fw-bold text-dark mb-1">Công việc cần xử lý</h3>
+        <p class="text-muted mb-0" style="font-size: .92rem;">Theo dõi các công việc chủ trọ cần quan tâm</p>
+    </div>
+
+    <div class="task-grid">
+        <!-- 1. Duyệt hóa đơn -->
+        <div class="task-card task-hoadon">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="task-icon-wrap">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div class="task-count" th:text="${congViec.soHoaDonChoDuyet}">0</div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Duyệt hóa đơn</h5>
+                <p class="text-muted small mb-4">Hóa đơn đang chờ chủ trọ kiểm tra, xác nhận.</p>
+            </div>
+            <div>
+                <a th:href="@{/landlord/hoa-don(trangThai='CHO_DUYET')}" class="task-link">
+                    Xem danh sách <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 2. Xử lý sự cố -->
+        <div class="task-card task-suco">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="task-icon-wrap">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="task-count" th:text="${congViec.soSuCoChuaXuLy}">0</div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Xử lý sự cố</h5>
+                <p class="text-muted small mb-4">Sự cố người thuê báo cáo nhưng chưa được giải quyết.</p>
+            </div>
+            <div>
+                <a th:href="@{/landlord/su-co}" class="task-link">
+                    Xem danh sách <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3. Phòng trống -->
+        <div class="task-card task-phong">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="task-icon-wrap">
+                        <i class="bi bi-door-open"></i>
+                    </div>
+                    <div class="task-count" th:text="${congViec.soPhongTrong}">0</div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Phòng trống</h5>
+                <p class="text-muted small mb-4">Các phòng hiện đang trống, cần được cho thuê.</p>
+            </div>
+            <div>
+                <a th:href="@{/landlord/quan-ly(trangThai=0)}" class="task-link">
+                    Xem danh sách <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 4. Hợp đồng sắp hết hạn -->
+        <div class="task-card task-hopdong">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="task-icon-wrap">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div class="task-count" th:text="${congViec.soHopDongSapHetHan}">0</div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Hợp đồng sắp hết hạn</h5>
+                <p class="text-muted small mb-4">Các hợp đồng đang hoạt động và gần đến ngày kết thúc.</p>
+            </div>
+            <div>
+                <a th:href="@{/landlord/hop-dong(sapHetHan=true)}" class="task-link">
+                    Xem danh sách <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- 5. Hóa đơn quá hạn -->
+        <div class="task-card task-quahan">
+            <div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="task-icon-wrap">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="task-count" th:text="${congViec.soHoaDonQuaHan}">0</div>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Hóa đơn quá hạn</h5>
+                <p class="text-muted small mb-4">Hóa đơn chưa thanh toán đã vượt quá hạn ngày 05.</p>
+            </div>
+            <div>
+                <a th:href="@{/landlord/hoa-don/qua-han}" class="task-link">
+                    Xem danh sách <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
+

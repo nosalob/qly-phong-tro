@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Thống kê</title>
+</head>
+<body>
+<div th:fragment="content">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Header & Filter Row -->
+    <div class="card-box p-3 mb-4">
+        <form th:action="@{/landlord/thong-ke}" method="get" id="filterForm">
+            <div class="row g-3 align-items-center">
+                <!-- Phạm vi thống kê -->
+                <div class="col-12 col-md-auto d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-secondary small fw-medium">
+                        <i class="bi bi-building me-1"></i>Phạm vi thống kê:
+                    </span>
+                    <button type="button" class="btn btn-sm rounded-pill px-3"
+                            th:classappend="${selectedToaNhaId == null} ? 'btn-primary' : 'btn-outline-secondary'"
+                            onclick="selectToaNha('')">
+                        Tất cả tòa nhà
+                    </button>
+                    <select class="form-select form-select-sm d-inline-block w-auto rounded-pill"
+                            name="toaNhaId" id="toaNhaSelect" onchange="this.form.submit()">
+                        <option value="" th:selected="${selectedToaNhaId == null}">Chọn tòa nhà</option>
+                        <option th:each="tn : ${dsToaNha}"
+                                th:value="${tn.id}"
+                                th:text="${tn.tenToaNha}"
+                                th:selected="${selectedToaNhaId == tn.id}">
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Khoảng thời gian -->
+                <div class="col-12 col-md-auto ms-md-auto d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-secondary small fw-medium">
+                        <i class="bi bi-calendar3 me-1"></i>Khoảng thời gian:
+                    </span>
+                    <select class="form-select form-select-sm d-inline-block w-auto rounded-pill"
+                            name="thoiGian" id="thoiGianSelect" onchange="onThoiGianChange(this.value)">
+                        <option value="thang-nay" th:selected="${selectedThoiGian == 'thang-nay'}">Tháng này</option>
+                        <option value="3-thang" th:selected="${selectedThoiGian == '3-thang'}">3 tháng gần nhất</option>
+                        <option value="6-thang" th:selected="${selectedThoiGian == '6-thang'}">6 tháng gần nhất</option>
+                        <option value="nam-nay" th:selected="${selectedThoiGian == 'nam-nay'}">Năm nay</option>
+                        <option value="tuy-chinh" th:selected="${selectedThoiGian == 'tuy-chinh'}">Tùy chỉnh</option>
+                    </select>
+
+                    <div id="customDateRange" class="d-flex align-items-center gap-2"
+                         th:style="${selectedThoiGian == 'tuy-chinh'} ? 'display:flex !important;' : 'display:none !important;'">
+                        <input type="month" name="tuThang" th:value="${tuThang}" class="form-control form-control-sm" style="width:140px;">
+                        <span>-</span>
+                        <input type="month" name="denThang" th:value="${denThang}" class="form-control form-control-sm" style="width:140px;">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Lọc</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 1. Thống kê phòng -->
+    <div class="card-box p-4 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-house-door-fill text-primary fs-5"></i>
+            <h5 class="mb-0 fw-bold text-dark fs-6">Thống kê phòng</h5>
+        </div>
+        <div class="row g-3 text-center align-items-center">
+            <!-- Tổng số phòng -->
+            <div class="col-6 col-md-3">
+                <div class="p-2">
+                    <div style="background:#eff6ff; color:#0284c7; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 10px;">
+                        <i class="bi bi-door-closed"></i>
+                    </div>
+                    <div class="text-muted small mb-1">Tổng số phòng</div>
+                    <div class="fw-bold fs-3 text-dark" th:text="${thongKe.phong.tongSoPhong}">0</div>
+                </div>
+            </div>
+
+            <!-- Đang cho thuê -->
+            <div class="col-6 col-md-3 border-start">
+                <div class="p-2">
+                    <div style="background:#ecfdf5; color:#16a34a; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 10px;">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div class="text-muted small mb-1">Đang cho thuê</div>
+                    <div class="fw-bold fs-3 text-dark">
+                        <span th:text="${thongKe.phong.dangChoThue}">0</span>
+                        <span class="fs-6 fw-normal text-success">(<span th:text="${thongKe.phong.dangChoThuePct}">0</span>%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phòng trống -->
+            <div class="col-6 col-md-3 border-start">
+                <div class="p-2">
+                    <div style="background:#fff7ed; color:#ea580c; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 10px;">
+                        <i class="bi bi-door-open-fill"></i>
+                    </div>
+                    <div class="text-muted small mb-1">Phòng trống</div>
+                    <div class="fw-bold fs-3 text-dark">
+                        <span th:text="${thongKe.phong.phongTrong}">0</span>
+                        <span class="fs-6 fw-normal" style="color:#ea580c;">(<span th:text="${thongKe.phong.phongTrongPct}">0</span>%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ngừng sử dụng -->
+            <div class="col-6 col-md-3 border-start">
+                <div class="p-2">
+                    <div style="background:#f1f5f9; color:#64748b; width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; margin:0 auto 10px;">
+                        <i class="bi bi-pause-circle-fill"></i>
+                    </div>
+                    <div class="text-muted small mb-1">Ngừng sử dụng</div>
+                    <div class="fw-bold fs-3 text-dark">
+                        <span th:text="${thongKe.phong.ngungSuDung}">0</span>
+                        <span class="fs-6 fw-normal text-secondary">(<span th:text="${thongKe.phong.ngungSuDungPct}">0</span>%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Tình hình tài chính & Doanh thu theo tháng -->
+    <div class="row g-3 mb-4">
+        <!-- Tình hình tài chính -->
+        <div class="col-12 col-lg-5">
+            <div class="card-box p-4 h-100 d-flex flex-column justify-content-between">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-cash-stack text-primary fs-5"></i>
+                    <h5 class="mb-0 fw-bold text-dark fs-6">Tình hình tài chính</h5>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    <!-- Doanh thu đã thu -->
+                    <div class="p-3 rounded-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-success rounded-circle p-2" style="font-size:12px;">
+                                <i class="bi bi-currency-dollar"></i>
+                            </span>
+                            <span class="text-secondary small fw-medium">Doanh thu đã thu</span>
+                        </div>
+                        <div class="fw-bold fs-3 text-dark" th:text="${thongKe.taiChinh.doanhThuDaThuFormatted}">0 đ</div>
+                        <div class="small text-success mt-1 fw-medium" th:if="${thongKe.taiChinh.phanTramSoVoiKyTruoc != null}">
+                            <span th:if="${thongKe.taiChinh.phanTramSoVoiKyTruoc >= 0}">
+                                &uarr; +<span th:text="${thongKe.taiChinh.phanTramSoVoiKyTruoc}">0</span>% so với tháng trước
+                            </span>
+                            <span th:if="${thongKe.taiChinh.phanTramSoVoiKyTruoc < 0}" class="text-danger">
+                                &darr; <span th:text="${thongKe.taiChinh.phanTramSoVoiKyTruoc}">0</span>% so với tháng trước
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Công nợ hiện tại -->
+                    <div class="p-3 rounded-3" style="background:#fef2f2; border:1px solid #fecaca;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-danger rounded-circle p-2" style="font-size:12px;">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </span>
+                            <span class="text-secondary small fw-medium">Công nợ hiện tại</span>
+                        </div>
+                        <div class="fw-bold fs-3 text-danger" th:text="${thongKe.taiChinh.congNoHienTaiFormatted}">0 đ</div>
+                        <div class="small text-muted mt-1">
+                            (<span th:text="${thongKe.taiChinh.soHoaDonChuaThanhToan}">0</span> hóa đơn chưa thanh toán)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doanh thu theo tháng -->
+        <div class="col-12 col-lg-7">
+            <div class="card-box p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-graph-up text-primary fs-5"></i>
+                        <h5 class="mb-0 fw-bold text-dark fs-6">Doanh thu theo tháng</h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 small">
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:#3b82f6;"></span>Đã thu</span>
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px;height:10px;background:#f97316;"></span>Công nợ</span>
+                    </div>
+                </div>
+                <div style="position:relative; height:240px; width:100%;">
+                    <canvas id="revenueBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Tình trạng hóa đơn & Tổng quan nhanh -->
+    <div class="row g-3 mb-4">
+        <!-- Tình trạng hóa đơn -->
+        <div class="col-12 col-lg-6">
+            <div class="card-box p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-receipt text-primary fs-5"></i>
+                    <h5 class="mb-0 fw-bold text-dark fs-6">Tình trạng hóa đơn</h5>
+                </div>
+
+                <div class="row align-items-center">
+                    <!-- Donut chart -->
+                    <div class="col-12 col-sm-5 text-center position-relative mb-3 mb-sm-0">
+                        <div style="position:relative; width:170px; height:170px; margin:0 auto;">
+                            <canvas id="invoiceDonutChart"></canvas>
+                            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+                                <div class="fw-bold fs-5 text-dark">100%</div>
+                                <div class="text-muted" style="font-size:0.75rem;">Tổng</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend & breakdown -->
+                    <div class="col-12 col-sm-7">
+                        <div class="d-flex flex-column gap-2">
+                            <!-- Đã thanh toán -->
+                            <div class="d-flex align-items-center justify-content-between p-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#3b82f6;"></span>
+                                    <span class="small text-secondary">Đã thanh toán</span>
+                                </div>
+                                <div class="small fw-semibold text-dark">
+                                    <span th:text="${thongKe.tinhTrangHoaDon.daThanhToanPct}">0</span>%
+                                    <span class="text-muted fw-normal ms-1">(&asymp; <span th:text="${thongKe.tinhTrangHoaDon.daThanhToanCount}">0</span>)</span>
+                                </div>
+                            </div>
+
+                            <!-- Chưa thanh toán (chưa quá hạn) -->
+                            <div class="d-flex align-items-center justify-content-between p-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#f97316;"></span>
+                                    <span class="small text-secondary">Chưa thanh toán</span>
+                                </div>
+                                <div class="small fw-semibold text-dark">
+                                    <span th:text="${thongKe.tinhTrangHoaDon.chuaThanhToanPct}">0</span>%
+                                    <span class="text-muted fw-normal ms-1">(&asymp; <span th:text="${thongKe.tinhTrangHoaDon.chuaThanhToanCount}">0</span>)</span>
+                                </div>
+                            </div>
+
+                            <!-- Chờ duyệt -->
+                            <div class="d-flex align-items-center justify-content-between p-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#10b981;"></span>
+                                    <span class="small text-secondary">Chờ duyệt</span>
+                                </div>
+                                <div class="small fw-semibold text-dark">
+                                    <span th:text="${thongKe.tinhTrangHoaDon.choDuyetPct}">0</span>%
+                                    <span class="text-muted fw-normal ms-1">(&asymp; <span th:text="${thongKe.tinhTrangHoaDon.choDuyetCount}">0</span>)</span>
+                                </div>
+                            </div>
+
+                            <!-- Quá hạn -->
+                            <div class="d-flex align-items-center justify-content-between p-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="rounded-circle d-inline-block" style="width:10px; height:10px; background:#ef4444;"></span>
+                                    <span class="small text-secondary">Quá hạn</span>
+                                </div>
+                                <div class="small fw-semibold text-dark">
+                                    <span th:text="${thongKe.tinhTrangHoaDon.quaHanPct}">0</span>%
+                                    <span class="text-muted fw-normal ms-1">(&asymp; <span th:text="${thongKe.tinhTrangHoaDon.quaHanCount}">0</span>)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tổng quan nhanh -->
+        <div class="col-12 col-lg-6">
+            <div class="card-box p-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-bar-chart-steps text-primary fs-5"></i>
+                        <h5 class="mb-0 fw-bold text-dark fs-6">Tổng quan nhanh</h5>
+                    </div>
+
+                    <div class="row g-2 text-center align-items-center">
+                        <!-- Doanh thu tháng này -->
+                        <div class="col-4">
+                            <div class="p-2">
+                                <div style="background:#eff6ff; color:#3b82f6; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin:0 auto 8px;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <div class="text-muted" style="font-size:0.75rem;">Doanh thu tháng này</div>
+                                <div class="fw-bold fs-5 text-primary mt-1" th:text="${thongKe.tongQuanNhanh.doanhThuThangNayShort}">0M đ</div>
+                                <div class="small text-success fw-medium mt-1" th:if="${thongKe.tongQuanNhanh.doanhThuGrowth != null}">
+                                    <span th:if="${thongKe.tongQuanNhanh.doanhThuGrowth >= 0}">&uarr; +<span th:text="${thongKe.tongQuanNhanh.doanhThuGrowth}">0</span>%</span>
+                                    <span th:if="${thongKe.tongQuanNhanh.doanhThuGrowth < 0}" class="text-danger">&darr; <span th:text="${thongKe.tongQuanNhanh.doanhThuGrowth}">0</span>%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tổng hóa đơn -->
+                        <div class="col-4 border-start">
+                            <div class="p-2">
+                                <div style="background:#eff6ff; color:#3b82f6; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin:0 auto 8px;">
+                                    <i class="bi bi-file-text"></i>
+                                </div>
+                                <div class="text-muted" style="font-size:0.75rem;">Tổng hóa đơn</div>
+                                <div class="fw-bold fs-5 text-dark mt-1" th:text="${thongKe.tongQuanNhanh.tongHoaDon}">0</div>
+                                <div class="small text-success fw-medium mt-1" th:if="${thongKe.tongQuanNhanh.tongHoaDonGrowth != null}">
+                                    <span th:if="${thongKe.tongQuanNhanh.tongHoaDonGrowth >= 0}">&uarr; +<span th:text="${thongKe.tongQuanNhanh.tongHoaDonGrowth}">0</span>%</span>
+                                    <span th:if="${thongKe.tongQuanNhanh.tongHoaDonGrowth < 0}" class="text-danger">&darr; <span th:text="${thongKe.tongQuanNhanh.tongHoaDonGrowth}">0</span>%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khách thuê hiện tại -->
+                        <div class="col-4 border-start">
+                            <div class="p-2">
+                                <div style="background:#eff6ff; color:#3b82f6; width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; margin:0 auto 8px;">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="text-muted" style="font-size:0.75rem;">Khách thuê hiện tại</div>
+                                <div class="fw-bold fs-5 text-dark mt-1" th:text="${thongKe.tongQuanNhanh.khachThueHienTai}">0</div>
+                                <div class="small text-success fw-medium mt-1" th:if="${thongKe.tongQuanNhanh.khachThueGrowth != null}">
+                                    <span th:if="${thongKe.tongQuanNhanh.khachThueGrowth >= 0}">&uarr; +<span th:text="${thongKe.tongQuanNhanh.khachThueGrowth}">0</span>%</span>
+                                    <span th:if="${thongKe.tongQuanNhanh.khachThueGrowth < 0}" class="text-danger">&darr; <span th:text="${thongKe.tongQuanNhanh.khachThueGrowth}">0</span>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer note -->
+                <div class="mt-3 p-2 rounded-3 d-flex align-items-center" style="background:#eff6ff; color:#1d4ed8; font-size:0.8rem;">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <span>Dữ liệu được cập nhật đến ngày <span th:text="${thongKe.tongQuanNhanh.ngayCapNhat}">05/11/2026</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript khởi tạo Chart.js & Filters -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const bieuDoData = /*[[${thongKe.bieuDoDoanhThu}]]*/ [];
+        const donutData = /*[[${thongKe.tinhTrangHoaDon}]]*/ {};
+
+        function selectToaNha(val) {
+            document.getElementById('toaNhaSelect').value = val;
+            document.getElementById('filterForm').submit();
+        }
+
+        function onThoiGianChange(val) {
+            const customRange = document.getElementById('customDateRange');
+            if (val === 'tuy-chinh') {
+                customRange.style.display = 'flex';
+            } else {
+                customRange.style.display = 'none';
+                document.getElementById('filterForm').submit();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. Biểu đồ cột: Doanh thu theo tháng
+            if (bieuDoData && bieuDoData.length > 0) {
+                const barLabels = bieuDoData.map(item => item.label);
+                const daThuValues = bieuDoData.map(item => item.daThu);
+                const congNoValues = bieuDoData.map(item => item.congNo);
+
+                const barCtx = document.getElementById('revenueBarChart');
+                if (barCtx) {
+                    new Chart(barCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: barLabels,
+                            datasets: [
+                                {
+                                    label: 'Đã thu',
+                                    data: daThuValues,
+                                    backgroundColor: '#3b82f6',
+                                    borderRadius: 4,
+                                    barPercentage: 0.7,
+                                    categoryPercentage: 0.6
+                                },
+                                {
+                                    label: 'Công nợ',
+                                    data: congNoValues,
+                                    backgroundColor: '#f97316',
+                                    borderRadius: 4,
+                                    barPercentage: 0.7,
+                                    categoryPercentage: 0.6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function (ctx) {
+                                            const val = ctx.parsed.y || 0;
+                                            return ctx.dataset.label + ': ' + Number(val).toLocaleString('vi-VN') + ' đ';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function (value) {
+                                            if (value >= 1000000) {
+                                                return (value / 1000000) + 'M';
+                                            }
+                                            return value;
+                                        }
+                                    },
+                                    grid: {
+                                        color: '#f1f5f9'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 2. Biểu đồ tròn: Tình trạng hóa đơn
+            const donutCtx = document.getElementById('invoiceDonutChart');
+            if (donutCtx && donutData) {
+                const totalInvoices = donutData.tongSo || 0;
+                const dData = totalInvoices > 0
+                    ? [donutData.daThanhToanCount, donutData.chuaThanhToanCount, donutData.choDuyetCount, donutData.quaHanCount]
+                    : [0, 0, 0, 0];
+
+                new Chart(donutCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Đã thanh toán', 'Chưa thanh toán', 'Chờ duyệt', 'Quá hạn'],
+                        datasets: [{
+                            data: totalInvoices > 0 ? dData : [1],
+                            backgroundColor: totalInvoices > 0
+                                ? ['#3b82f6', '#f97316', '#10b981', '#ef4444']
+                                : ['#e2e8f0'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: totalInvoices > 0,
+                                callbacks: {
+                                    label: function (ctx) {
+                                        const count = ctx.parsed || 0;
+                                        const pct = totalInvoices > 0 ? (count * 100 / totalInvoices).toFixed(1) : 0;
+                                        return ctx.label + ': ' + count + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        /*]]>*/
+    </script>
+</div>
+</body>
+</html>
+

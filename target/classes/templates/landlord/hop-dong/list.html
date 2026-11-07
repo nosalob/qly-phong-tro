@@ -4,59 +4,186 @@
 <head><title>Hợp đồng</title></head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="page-title mb-0">Danh sách Hợp đồng</h1>
-        <a th:href="@{/landlord/hop-dong/them}" class="btn btn-accent">
-            <i class="bi bi-plus-circle me-1"></i>Ký hợp đồng mới
-        </a>
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div>
+            <h1 class="page-title mb-1" th:text="${filter == 'SAP_HET_HAN'} ? 'Hợp đồng sắp hết hạn' : 'Danh sách Hợp đồng'">Danh sách Hợp đồng</h1>
+            <p class="text-muted small mb-0" th:if="${filter == 'SAP_HET_HAN'}">Các hợp đồng đang hoạt động có ngày kết thúc trong vòng 30 ngày tới.</p>
+            <p class="text-muted small mb-0" th:unless="${filter == 'SAP_HET_HAN'}">Quản lý và theo dõi thông tin hợp đồng thuê phòng</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a th:href="@{/landlord/hop-dong/them}" class="btn btn-accent">
+                <i class="bi bi-plus-circle me-1"></i>Ký hợp đồng mới
+            </a>
+        </div>
     </div>
+
+    <!-- Thanh tìm kiếm và bộ lọc -->
+    <div class="card-box p-3 mb-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <!-- Filter tabs -->
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/landlord/hop-dong(filter='ALL', keyword=${keyword})}"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${filter == 'ALL' or filter == null or filter == ''} ? 'btn-primary' : 'btn-outline-secondary'"
+                   style="font-weight:500;">
+                    <i class="bi bi-list-ul me-1"></i>Tất cả
+                </a>
+                <a th:href="@{/landlord/hop-dong(filter='ACTIVE', keyword=${keyword})}"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${filter == 'ACTIVE'} ? 'btn-primary' : 'btn-outline-secondary'"
+                   style="font-weight:500;">
+                    <i class="bi bi-check-circle me-1"></i>Đang hiệu lực
+                </a>
+                <a th:href="@{/landlord/hop-dong(filter='SAP_HET_HAN', keyword=${keyword})}"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${filter == 'SAP_HET_HAN'} ? 'btn-warning text-dark fw-bold' : 'btn-outline-secondary'"
+                   style="font-weight:500;">
+                    <i class="bi bi-hourglass-split me-1"></i>Sắp hết hạn (30 ngày)
+                </a>
+                <a th:href="@{/landlord/hop-dong(filter='DA_KET_THUC', keyword=${keyword})}"
+                   class="btn btn-sm rounded-pill px-3"
+                   th:classappend="${filter == 'DA_KET_THUC'} ? 'btn-secondary text-white' : 'btn-outline-secondary'"
+                   style="font-weight:500;">
+                    <i class="bi bi-archive me-1"></i>Đã kết thúc
+                </a>
+            </div>
+
+            <!-- Search form -->
+            <form th:action="@{/landlord/hop-dong}" method="get" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="filter" th:value="${filter}">
+                <div class="input-group input-group-sm" style="width: 280px;">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="keyword" th:value="${keyword}"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="Phòng, tòa nhà, đại diện...">
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">Tìm</button>
+                <a th:href="@{/landlord/hop-dong}" class="btn btn-sm btn-outline-secondary"
+                   th:if="${(keyword != null and !keyword.isEmpty()) or (filter != null and filter != 'ALL')}"
+                   title="Xóa tìm kiếm và bộ lọc">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách hợp đồng duy nhất -->
     <div class="card-box">
         <div class="card-box-hd">
-            <h5><i class="bi bi-file-earmark-text me-2" style="color:#6366f1"></i>Hợp đồng</h5>
-            <small class="text-muted" th:text="${danhSach.size()} + ' hợp đồng'"></small>
+            <h5>
+                <i class="bi bi-file-earmark-text me-2" style="color:#6366f1"></i>
+                <span th:text="${filter == 'SAP_HET_HAN'} ? 'Hợp đồng sắp hết hạn' : 'Hợp đồng'">Hợp đồng</span>
+            </h5>
+            <small class="text-muted" th:if="${pageResult != null}">
+                Tổng số: <strong th:text="${pageResult.totalElements}">0</strong> kết quả
+            </small>
         </div>
-        <div th:if="${danhSach.isEmpty()}" class="p-5 text-center text-muted">
+
+        <!-- Empty state -->
+        <div th:if="${pageResult == null or pageResult.isEmpty()}" class="p-5 text-center text-muted">
             <i class="bi bi-file-earmark-x" style="font-size:3rem;opacity:.3"></i>
-            <p class="mt-2">Chưa có hợp đồng nào.</p>
+            <p class="mt-3 fs-6" th:if="${(keyword != null and !keyword.isEmpty()) or (filter != null and filter != 'ALL')}">
+                Không tìm thấy hợp đồng nào phù hợp với điều kiện tìm kiếm hoặc bộ lọc.
+            </p>
+            <p class="mt-3 fs-6" th:unless="${(keyword != null and !keyword.isEmpty()) or (filter != null and filter != 'ALL')}">
+                Chưa có hợp đồng nào trong hệ thống.
+            </p>
+            <div class="mt-3" th:if="${(keyword != null and !keyword.isEmpty()) or (filter != null and filter != 'ALL')}">
+                <a th:href="@{/landlord/hop-dong}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Xóa tìm kiếm & bộ lọc
+                </a>
+            </div>
         </div>
-        <div class="table-responsive" th:if="${!danhSach.isEmpty()}">
+
+        <!-- Bảng hiển thị dữ liệu -->
+        <div class="table-responsive" th:if="${pageResult != null and !pageResult.isEmpty()}">
             <table class="table">
                 <thead>
                 <tr>
-                    <th>#</th>
+                    <th style="width: 50px;">#</th>
                     <th>Phòng</th>
                     <th>Đại diện</th>
                     <th>Ngày bắt đầu</th>
+                    <th>Ngày kết thúc</th>
                     <th>Tiền thuê</th>
                     <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th class="text-end" style="width: 80px;">Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="item, st : ${danhSach}">
-                    <td th:text="${st.count}" class="text-muted"></td>
+                    <td th:text="${pageResult.number * pageResult.size + st.count}" class="text-muted"></td>
                     <td>
                         <strong th:text="${item.soPhong}"></strong>
                         <div class="text-muted" style="font-size:.76rem" th:text="${item.tenToaNha}"></div>
                     </td>
                     <td th:text="${item.daiDien != null ? item.daiDien.hoTen : '—'}"></td>
                     <td th:text="${#temporals.format(item.ngayBatDau, 'dd/MM/yyyy')}"></td>
+                    <td>
+                        <span th:if="${item.ngayKetThuc != null}"
+                              th:classappend="${item.sapHetHan} ? 'text-danger fw-bold' : ''"
+                              th:text="${#temporals.format(item.ngayKetThuc, 'dd/MM/yyyy')}"></span>
+                        <span th:unless="${item.ngayKetThuc != null}" class="text-muted">—</span>
+                    </td>
                     <td th:text="${#numbers.formatDecimal(item.tienThue, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
                     <td>
-                            <span class="badge"
-                                  th:classappend="${item.trangThai.name() == 'ACTIVE'} ? 'bg-active' :
-                                                 (${item.trangThai.name() == 'KET_THUC_BINH_THUONG'} ? 'bg-cho-duyet' : 'bg-ngung')"
-                                  th:text="${item.trangThaiLabel}"></span>
+                        <span class="badge"
+                              th:classappend="${item.trangThai != null and item.trangThai.name() == 'ACTIVE'} ? 'bg-active' :
+                                             (${item.trangThai != null and item.trangThai.name() == 'KET_THUC_BINH_THUONG'} ? 'bg-cho-duyet' : 'bg-ngung')"
+                              th:text="${item.trangThaiLabel}"></span>
                     </td>
-                    <td>
+                    <td class="text-end">
                         <a th:href="@{/landlord/hop-dong/{id}(id=${item.id})}"
-                           class="btn btn-sm btn-outline-primary" style="border-radius:7px;">
+                           class="btn btn-sm btn-outline-primary" style="border-radius:7px;"
+                           title="Xem chi tiết">
                             <i class="bi bi-eye"></i>
                         </a>
                     </td>
                 </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Phân trang -->
+        <div class="p-3 border-top d-flex align-items-center justify-content-between flex-wrap gap-2"
+             th:if="${pageResult != null and pageResult.totalElements > 0}">
+            <div class="text-muted small">
+                Hiển thị
+                <strong th:text="${pageResult.number * pageResult.size + 1}">1</strong>
+                –
+                <strong th:text="${((pageResult.number + 1) * pageResult.size) > pageResult.totalElements ? pageResult.totalElements : ((pageResult.number + 1) * pageResult.size)}">10</strong>
+                trong <strong th:text="${pageResult.totalElements}">20</strong> hợp đồng
+                (Trang <span th:text="${pageResult.number + 1}">1</span> / <span th:text="${pageResult.totalPages}">1</span>)
+            </div>
+
+            <nav th:if="${pageResult.totalPages > 1}">
+                <ul class="pagination pagination-sm mb-0">
+                    <!-- Trước -->
+                    <li class="page-item" th:classappend="${pageResult.first} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hop-dong(page=${pageResult.number - 1}, keyword=${keyword}, filter=${filter})}">
+                            <i class="bi bi-chevron-left me-1"></i>Trước
+                        </a>
+                    </li>
+
+                    <!-- Các trang -->
+                    <li class="page-item"
+                        th:each="pageNum : ${#numbers.sequence(0, pageResult.totalPages - 1)}"
+                        th:classappend="${pageNum == pageResult.number} ? 'active'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hop-dong(page=${pageNum}, keyword=${keyword}, filter=${filter})}"
+                           th:text="${pageNum + 1}">1</a>
+                    </li>
+
+                    <!-- Sau -->
+                    <li class="page-item" th:classappend="${pageResult.last} ? 'disabled'">
+                        <a class="page-link"
+                           th:href="@{/landlord/hop-dong(page=${pageResult.number + 1}, keyword=${keyword}, filter=${filter})}">
+                            Sau<i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

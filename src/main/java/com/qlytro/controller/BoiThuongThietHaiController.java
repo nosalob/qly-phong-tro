@@ -37,7 +37,7 @@ public class BoiThuongThietHaiController {
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable Integer id, Model model) {
+    public String detail(@PathVariable(name = "id") Integer id, Model model) {
         model.addAttribute("boiThuong", boiThuongService.findById(id));
         model.addAttribute("pageTitle", "Chi tiết Bồi thường");
         model.addAttribute("pageContent", "landlord/boi-thuong/detail");
@@ -45,8 +45,8 @@ public class BoiThuongThietHaiController {
     }
 
     @GetMapping("/them")
-    public String themForm(@RequestParam(required = false) Integer suCoId,
-                           @RequestParam(required = false) Integer hopDongId,
+    public String themForm(@RequestParam(name = "suCoId", required = false) Integer suCoId,
+                           @RequestParam(name = "hopDongId", required = false) Integer hopDongId,
                            Model model) {
         BoiThuongThietHaiRequest req = new BoiThuongThietHaiRequest();
         if (suCoId != null) {
@@ -115,7 +115,7 @@ public class BoiThuongThietHaiController {
     }
 
     @PostMapping("/{id}/xac-nhan")
-    public String xacNhanThanhToan(@PathVariable Integer id,
+    public String xacNhanThanhToan(@PathVariable(name = "id") Integer id,
                                    RedirectAttributes redirectAttributes) {
         boiThuongService.xacNhanThanhToan(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã xác nhận thanh toán khoản bồi thường!");
@@ -123,7 +123,7 @@ public class BoiThuongThietHaiController {
     }
 
     @PostMapping("/{id}/xoa")
-    public String xoa(@PathVariable Integer id,
+    public String xoa(@PathVariable(name = "id") Integer id,
                       RedirectAttributes redirectAttributes) {
         boiThuongService.deleteById(id);
         redirectAttributes.addFlashAttribute("successMsg", "Đã xóa yêu cầu bồi thường.");
